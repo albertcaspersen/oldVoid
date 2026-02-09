@@ -146,7 +146,7 @@ const flockRef = ref(null)
 const bird3DRef = ref(null)
 
 // Toggle for at vise alle billeder eller bruge wipe effekt
-const showAllImages = ref(true) // Start med alle billeder synlige for nem placering
+const showAllImages = ref(false) // Wipe effect enabled (OFF)
 
 // Toggle for atmosphere (nature audio) og Speak (speech audio)
 const atmosphereEnabled = ref(true) // Start med atmosphere tændt
@@ -3197,10 +3197,6 @@ onMounted(() => {
     if (key === 'a') keys.a = true
     if (key === 's') keys.s = true
     if (key === 'd') keys.d = true
-    // Toggle vis alle billeder med 'v' tast
-    if (key === 'v') {
-      showAllImages.value = !showAllImages.value
-    }
   }
   
   handleKeyUp = (event) => {
