@@ -1322,7 +1322,6 @@ onMounted(() => {
     const progress = warmUpTotalItems > 0 ? Math.round((warmUpLoadedItems / warmUpTotalItems) * 100) : 0
     warmUpProgress.value = progress
     if (statusText) warmUpStatus.value = statusText
-    console.log(`Warm-up progress: ${warmUpLoadedItems}/${warmUpTotalItems} (${progress}%) - ${statusText || ''}`)
   }
   
   // Promise-baseret tekstur loading
@@ -1386,7 +1385,6 @@ onMounted(() => {
   
   // Warm-up funktion der preloader alle initielle ressourcer
   const performWarmUp = async () => {
-    console.log('🚀 Starting warm-up process...')
     // Preload ALLE billeder for at undgå lag under scrolling
     const imagesToPreload = imageConfigs
     
@@ -1416,7 +1414,6 @@ onMounted(() => {
     warmUpLoadedItems = 0
     warmUpProgress.value = 0
     warmUpStatus.value = 'Initializing...'
-    console.log(`📊 Warm-up total items: ${warmUpTotalItems}`)
     
     // Force Vue reactivity update
     await new Promise(resolve => setTimeout(resolve, 10))
@@ -1768,7 +1765,6 @@ onMounted(() => {
         }
         
         // isWarmedUp is already set to true earlier
-        console.log('🔄 Returning to garden at scroll position:', scrollProgress)
       }
       
     } catch (error) {
@@ -2363,7 +2359,6 @@ onMounted(() => {
     imageData.textureLoading = true
     const config = imageData.config
     
-    console.log(`🔄 Starting load: ${config.path}`)
     const loadStart = performance.now()
     
     // Load tekstur
@@ -2401,9 +2396,6 @@ onMounted(() => {
       imageData.texture = loadedTexture
       imageData.textureLoaded = true
       imageData.textureLoading = false
-      
-      const updateTime = performance.now() - updateStart
-      console.log(`✅ Loaded: ${config.path} (download: ${loadTime.toFixed(0)}ms, update: ${updateTime.toFixed(1)}ms, size: ${loadedTexture.image.width}x${loadedTexture.image.height})`)
     })
   }
   
@@ -3208,7 +3200,6 @@ onMounted(() => {
     // Toggle vis alle billeder med 'v' tast
     if (key === 'v') {
       showAllImages.value = !showAllImages.value
-      console.log(`All images ${showAllImages.value ? 'visible' : 'hidden (wipe effect enabled)'}`)
     }
   }
   
@@ -3243,7 +3234,6 @@ onMounted(() => {
       const route = clickedMesh.userData.route
       
       if (route) {
-        console.log('Navigating to:', route)
         // Reset cursor og hover state før navigation
         if (hoveredNavMesh) {
           // Skjul hover underline (animér width til 0)
@@ -3841,11 +3831,7 @@ onMounted(() => {
       }
     }
     
-    // Debug: Log position hver 60 frames
     frameCount++
-    if (frameCount % 60 === 0) {
-      console.log(`📍 Scroll: ${scrollProgress.toFixed(3)}, Camera Z: ${camera.position.z.toFixed(2)}`)
-    }
     
     // Opdater kamera og blyant linje baseret på scroll
     updateCameraPosition()

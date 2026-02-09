@@ -11,8 +11,6 @@ const casesPicsDir = path.join(__dirname, 'public', 'pics', 'casesPics')
 // Funktion til at forbedre farverne på et billede
 async function fixImageColors(filePath) {
   try {
-    console.log(`Forbedrer farver: ${path.basename(filePath)}`)
-    
     // Læs billedet og juster farverne
     const outputBuffer = await sharp(filePath)
       .modulate({
@@ -33,8 +31,6 @@ async function fixImageColors(filePath) {
     // Gem det forbedrede billede
     fs.writeFileSync(filePath, outputBuffer)
     
-    console.log(`  ✓ Færdig`)
-    
     return { success: true }
   } catch (error) {
     console.error(`  ✗ Fejl:`, error.message)
@@ -44,12 +40,8 @@ async function fixImageColors(filePath) {
 
 // Hovedfunktion
 async function main() {
-  console.log('=== Forbedrer farver på cases billeder ===\n')
-  
   const files = fs.readdirSync(casesPicsDir)
   const pngFiles = files.filter(f => f.toLowerCase().endsWith('.png'))
-  
-  console.log(`Fundet ${pngFiles.length} PNG filer\n`)
   
   let successCount = 0
   let failCount = 0
@@ -63,14 +55,6 @@ async function main() {
       failCount++
     }
   }
-  
-  console.log(`\n=== Færdig ===`)
-  console.log(`Succes: ${successCount}`)
-  console.log(`Fejl: ${failCount}`)
-  console.log(`\nBemærk: Hvis farverne stadig ikke ser korrekte ud, kan du justere værdierne i scriptet:`)
-  console.log(`- brightness: 0.85 (lavere = mørkere)`)
-  console.log(`- saturation: 1.15 (højere = mere mættet)`)
-  console.log(`- gamma: 1.1 (højere = mere kontrast)`)
 }
 
 main().catch(console.error)

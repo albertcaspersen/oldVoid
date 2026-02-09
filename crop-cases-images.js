@@ -18,9 +18,6 @@ async function cropImage(filePath) {
     const image = sharp(filePath)
     const metadata = await image.metadata()
     
-    console.log(`\nBeskærer: ${path.basename(filePath)}`)
-    console.log(`  Original størrelse: ${metadata.width}x${metadata.height}`)
-    
     const originalAspect = metadata.width / metadata.height
     const targetAspect = TARGET_WIDTH / TARGET_HEIGHT
     
@@ -39,10 +36,6 @@ async function cropImage(filePath) {
       left = 0
       top = Math.round((metadata.height - cropHeight) / 2)
     }
-    
-    console.log(`  Original: ${metadata.width}x${metadata.height} (aspect: ${originalAspect.toFixed(2)})`)
-    console.log(`  Beskærer til: ${cropWidth}x${cropHeight} fra position (${left}, ${top})`)
-    console.log(`  Crop aspect: ${(cropWidth/cropHeight).toFixed(2)}, Target aspect: ${targetAspect.toFixed(2)}`)
     
     // Først beskær til korrekt aspect ratio (center crop)
     let croppedImage = image.extract({
@@ -76,8 +69,6 @@ async function cropImage(filePath) {
     // Gem det beskårne billede
     fs.writeFileSync(filePath, outputBuffer)
     
-    console.log(`  ✓ Færdig: ${TARGET_WIDTH}x${TARGET_HEIGHT}`)
-    
     return { success: true }
   } catch (error) {
     console.error(`  ✗ Fejl ved beskæring af ${filePath}:`, error.message)
@@ -87,13 +78,8 @@ async function cropImage(filePath) {
 
 // Hovedfunktion
 async function main() {
-  console.log('=== Beskærer cases billeder ===')
-  console.log(`Target størrelse: ${TARGET_WIDTH}x${TARGET_HEIGHT} (14:9 aspect ratio)\n`)
-  
   const files = fs.readdirSync(casesPicsDir)
   const pngFiles = files.filter(f => f.toLowerCase().endsWith('.png'))
-  
-  console.log(`Fundet ${pngFiles.length} PNG filer\n`)
   
   let successCount = 0
   let failCount = 0
@@ -107,10 +93,6 @@ async function main() {
       failCount++
     }
   }
-  
-  console.log(`\n=== Beskæring færdig ===`)
-  console.log(`Succes: ${successCount}`)
-  console.log(`Fejl: ${failCount}`)
 }
 
 main().catch(console.error)

@@ -33,8 +33,6 @@ async function compressImage(filePath) {
     const originalSize = stats.size
     const ext = path.extname(filePath).toLowerCase()
     
-    console.log(`Komprimerer: ${path.basename(filePath)} (${(originalSize / 1024).toFixed(2)} KB)...`)
-    
     let outputBuffer
     
     if (ext === '.png') {
@@ -62,8 +60,6 @@ async function compressImage(filePath) {
     // Gem det komprimerede billede
     fs.writeFileSync(filePath, outputBuffer)
     
-    console.log(`✓ ${path.basename(filePath)}: ${(originalSize / 1024).toFixed(2)} KB → ${(newSize / 1024).toFixed(2)} KB (${savings}% sparet)`)
-    
     return { originalSize, newSize, savings }
   } catch (error) {
     console.error(`Fejl ved komprimering af ${filePath}:`, error.message)
@@ -73,9 +69,7 @@ async function compressImage(filePath) {
 
 // Hovedfunktion
 async function main() {
-  console.log('Finder alle billeder...')
   const imageFiles = findImageFiles(picsDir)
-  console.log(`Fundet ${imageFiles.length} billeder\n`)
   
   let totalOriginalSize = 0
   let totalNewSize = 0
@@ -87,11 +81,6 @@ async function main() {
       totalNewSize += result.newSize
     }
   }
-  
-  console.log(`\n=== Komprimering færdig ===`)
-  console.log(`Total størrelse før: ${(totalOriginalSize / 1024 / 1024).toFixed(2)} MB`)
-  console.log(`Total størrelse efter: ${(totalNewSize / 1024 / 1024).toFixed(2)} MB`)
-  console.log(`Total besparelse: ${((1 - totalNewSize / totalOriginalSize) * 100).toFixed(1)}%`)
 }
 
 main().catch(console.error)
