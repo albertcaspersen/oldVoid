@@ -219,10 +219,15 @@ const unlockSpeechAudioForMobile = () => {
   const speechAudios = [speechAudio, speech2Audio, speech3Audio, speech4Audio, speech5Audio, speech6Audio, speech7Audio, speech8Audio]
   speechAudios.forEach((audio) => {
     if (audio && speakEnabled.value) {
+      const originalVolume = audio.volume
+      audio.volume = 0 // Mute under unlock så der ikke afspilles lyd
       audio.play().then(() => {
         audio.pause()
         audio.currentTime = 0
-      }).catch(() => {})
+        audio.volume = originalVolume
+      }).catch(() => {
+        audio.volume = originalVolume
+      })
     }
   })
 }
@@ -5123,6 +5128,13 @@ onUnmounted(() => {
   transition: opacity 0.1s ease-out;
 }
 
+@media (max-width: 768px) {
+  .intro-text {
+    top: 35%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 .scroll-text {
   position: absolute;
   bottom: 4rem;
@@ -5137,6 +5149,15 @@ onUnmounted(() => {
   letter-spacing: 0.02em;
   transition: opacity 0.5s ease-in-out;
   max-width: 30%;
+}
+
+@media (max-width: 768px) {
+  .scroll-text {
+    font-size: 0.875rem;
+    max-width: 85%;
+    left: 1.5rem;
+    bottom: 3rem;
+  }
 }
 
 /* Audio controls - Atmosphere and Speak toggles */

@@ -81,8 +81,8 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// Skjul under preloader, animer ned ved landing page (samme timing som "our landscape designs")
-watch([() => props.isWarmedUp, navBarRef], ([warmedUp, navEl]) => {
+// Skjul under preloader på forsiden, animer ned ved landing page. På undersider: vis altid.
+watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, navEl]) => {
   if (!navEl) return
 
   nextTick(() => {
@@ -90,6 +90,12 @@ watch([() => props.isWarmedUp, navBarRef], ([warmedUp, navEl]) => {
     if (!el) return
 
     gsap.killTweensOf(el)
+
+    // På undersider (ikke forsiden): vis nav altid
+    if (path !== '/') {
+      gsap.set(el, { y: 0, opacity: 1, visibility: 'visible' })
+      return
+    }
 
     if (!warmedUp) {
       // Preloader: skjul nav helt over viewport
