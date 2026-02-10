@@ -8,6 +8,10 @@ const props = defineProps({
     type: Number,
     default: 1
   },
+  isWarmedUp: {
+    type: Boolean,
+    default: false
+  },
   onNavigate: {
     type: Function,
     default: null
@@ -18,34 +22,8 @@ const router = useRouter()
 const route = useRoute()
 const navBarRef = ref(null)
 const isMenuOpen = ref(false) // Track if burger menu is open via click
-let isInLandingMode = true // Track if we're in landing page mode
 
-// Pages where nav should not animate down
-const noAnimationPages = ['/products', '/contact', '/about', '/cases']
-const isNoAnimationPage = () => noAnimationPages.includes(route.path)
-
-// Set initial state - nav should be hidden until landing logo fades out
-// But on subpages, show nav immediately without animation
 onMounted(() => {
-  nextTick(() => {
-    if (navBarRef.value) {
-      if (isNoAnimationPage()) {
-        // On subpages, show nav immediately
-        gsap.set(navBarRef.value, {
-          y: 0,
-          opacity: 1
-        })
-        isInLandingMode = false
-      } else {
-        // On landing page, start hidden
-        gsap.set(navBarRef.value, {
-          y: '-100vh', // Start completely above viewport
-          opacity: 0
-        })
-      }
-    }
-  })
-  
   // Add click outside listener for burger menu
   document.addEventListener('click', handleClickOutside)
 })
@@ -103,27 +81,9 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// GSAP animation for nav bar - animates down from top when leaving landing page
-// Resets and re-animates EVERY time we return to landing and scroll down again
-// On subpages (products, contact, about, cases), nav should not animate down
-watch([() => props.opacity, navBarRef, () => route.path], ([opacity, navEl, path]) => {
+// Skjul under preloader, animer ned ved landing page (samme timing som "our landscape designs")
+watch([() => props.isWarmedUp, navBarRef], ([warmedUp, navEl]) => {
   if (!navEl) return
-
-  // Skip animation logic on subpages
-  if (isNoAnimationPage()) {
-    nextTick(() => {
-      const el = navBarRef.value
-      if (!el) return
-      
-      // On subpages, just ensure nav is visible without animation
-      gsap.set(el, {
-        y: 0,
-        opacity: 1
-      })
-      isInLandingMode = false
-    })
-    return
-  }
 
   nextTick(() => {
     const el = navBarRef.value
@@ -131,51 +91,26 @@ watch([() => props.opacity, navBarRef, () => route.path], ([opacity, navEl, path
 
     gsap.killTweensOf(el)
 
-    // Threshold for being in "landing mode" - when nav should be hidden
-    const landingThreshold = 0.05
-    
-    // Check if we're entering landing mode (scrolling back to landing page)
-    if (opacity <= landingThreshold) {
-      // Reset to hidden state above viewport - ready to animate again
+    if (!warmedUp) {
+      // Preloader: skjul nav helt over viewport
       gsap.set(el, {
-        y: '-100vh', // Start completely above viewport
-        opacity: 0
+        y: '-100vh',
+        opacity: 0,
+        visibility: 'hidden'
       })
-      isInLandingMode = true
-      return
-    }
-    
-    // Check if we're leaving landing mode (scrolling into the experience)
-    // Also check if element is currently hidden (above viewport)
-    const currentY = gsap.getProperty(el, 'y')
-    const isCurrentlyHidden = typeof currentY === 'string' 
-      ? currentY.includes('-100vh') || parseFloat(currentY.replace('vh', '')) <= -90
-      : currentY <= -window.innerHeight * 0.9
-    
-    if (opacity > landingThreshold && (isInLandingMode || isCurrentlyHidden)) {
-      // We just transitioned from landing to experience - animate down!
-      isInLandingMode = false
-      
-      // Set initial state - start from above viewport
+    } else {
+      // Landing page klar: start fra top og animer ned (som landing logo animerer op)
       gsap.set(el, {
-        y: '-100vh', // Start completely above viewport
-        opacity: 0
+        y: '-100vh',
+        opacity: 0,
+        visibility: 'visible'
       })
-      
-      // Animate down from top with same timing as landing logo
       gsap.to(el, {
-        y: 0, // End position (natural position at top)
-        opacity: 1, // Animate to full opacity
-        duration: 1.8, // Same duration as landing logo
-        ease: 'expo.out', // Same easing as landing logo
+        y: 0,
+        opacity: 1,
+        duration: 1.8,
+        ease: 'expo.out',
         delay: 0
-      })
-    } else if (!isInLandingMode && opacity > landingThreshold && !isCurrentlyHidden) {
-      // Already in experience mode and visible, just update opacity smoothly
-      gsap.to(el, {
-        opacity: opacity,
-        duration: 0.1,
-        ease: 'power2.out'
       })
     }
   })

@@ -10,7 +10,7 @@ const props = defineProps({
 })
 
 // ============================================
-// 3D FUGLE - 4 simple fugle omkring camera-pathen
+// 3D FUGLE - 7 simple fugle omkring camera-pathen
 // ============================================
 
 let birds = []
@@ -49,6 +49,27 @@ const birdConfigs = [
     baseY: 3.5, yAmplitude: 1.0,
     speed: 0.0012, phase: Math.PI * 1.5,
     size: 0.18, flapOffset: 4.5
+  },
+  {
+    // Fugl 5: Cirkler vest for pathen (x < 0)
+    centerX: -8, centerZ: 8, radiusX: 5, radiusZ: 6,
+    baseY: 2.2, yAmplitude: 0.6,
+    speed: 0.0022, phase: Math.PI * 0.25,
+    size: 0.19, flapOffset: 5.2
+  },
+  {
+    // Fugl 6: Øst for pathen, højere oppe
+    centerX: 9, centerZ: -8, radiusX: 6, radiusZ: 8,
+    baseY: 3.8, yAmplitude: 0.7,
+    speed: 0.0014, phase: Math.PI * 0.75,
+    size: 0.21, flapOffset: 6.0
+  },
+  {
+    // Fugl 7: Langsom bane nær kamera-pathen
+    centerX: 0, centerZ: -5, radiusX: 9, radiusZ: 6,
+    baseY: 2.6, yAmplitude: 0.9,
+    speed: 0.0010, phase: Math.PI * 1.2,
+    size: 0.17, flapOffset: 2.2
   }
 ]
 

@@ -116,10 +116,8 @@ let currentCameraPosition = null
 let targetCameraPosition = null
 let currentLookAt = null
 let targetLookAt = null
-const keys = { w: false, a: false, s: false, d: false }
+const keys = { w: false, s: false }
 const moveSpeed = 0.1
-const rotationSpeed = 0.02 // Hastighed for rotation med A og D
-let cameraRotationY = 0 // Nuværende Y-rotation offset (venstre/højre)
 let handleKeyDown = null
 let handleKeyUp = null
 let mouseX = 0 // Normaliseret mus position (-1 til 1)
@@ -198,6 +196,14 @@ let targetLandingParallaxY = 0 // Target Y for smooth interpolation
 const landingAnimationStarted = ref(false) // Track if landing animation has begun
 const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
 
+// Auto-scroll (Explore button) state
+const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
+let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
+const autoScrollSpeed = 0.00012 // Normal hastighed per frame
+const autoScrollSpeechSpeed = 0.00005 // Langsommere hastighed mens speak afspilles
+const autoScrollLandingSpeed = 0.0008 // Hurtigere hastighed gennem landing-fasen
+const autoScrollTransitionSpeed = 0.0004 // Medium hastighed fra landing til første tekst
+
 // Ref for landing top SVG element (our landscape designs)
 const landingTopSvgRef = ref(null)
 
@@ -218,6 +224,42 @@ const handleSoundClick = () => {
         console.warn('Kunne ikke starte audio:', err)
       })
     }
+  }
+}
+
+// Auto-scroll: Start automatisk scrolling gennem hele oplevelsen
+const startAutoScroll = () => {
+  if (isAutoScrolling.value) return
+  
+  isAutoScrolling.value = true
+  autoScrollSpeechPlaying = false
+  
+  // Aktiver lyd (som om brugeren har klikket)
+  soundClicked.value = true
+  
+  // Start nature audio
+  if (natureAudio && atmosphereEnabled.value && natureAudio.paused) {
+    natureAudio.play().catch(err => {
+      console.warn('Kunne ikke starte audio:', err)
+    })
+  }
+  
+  // Deaktiver manuel scrolling
+  if (handleScroll) {
+    window.removeEventListener('wheel', handleScroll)
+  }
+}
+
+// Auto-scroll: Stop automatisk scrolling
+const stopAutoScroll = () => {
+  if (!isAutoScrolling.value) return
+  
+  isAutoScrolling.value = false
+  autoScrollSpeechPlaying = false
+  
+  // Genaktiver manuel scrolling
+  if (handleScroll) {
+    window.addEventListener('wheel', handleScroll, { passive: true })
   }
 }
 
@@ -739,6 +781,10 @@ onMounted(() => {
   
   // HMR optimization: Ryd op eksisterende scene hvis den allerede findes
   if (scene) {
+    // Reset auto-scroll state
+    isAutoScrolling.value = false
+    autoScrollSpeechPlaying = false
+    
     // Stop animation loop
     if (animationId) {
       cancelAnimationFrame(animationId)
@@ -924,7 +970,6 @@ onMounted(() => {
     }
     penWipeProgress = 0
     lastEndT = -1
-    cameraRotationY = 0
     mouseX = 0
     mouseY = 0
     targetMouseX = 0
@@ -1342,14 +1387,14 @@ onMounted(() => {
     { path: '/sound/metalGate.mp3', name: 'metalGate' },
     { path: '/sound/water.wav', name: 'water' },
     { path: '/sound/bee.wav', name: 'bask' },
-    { path: '/Speak/lydklip1.wav', name: 'speech' },
-    { path: '/Speak/lydklip2.wav', name: 'speech2' },
-    { path: '/Speak/lydklip3.wav', name: 'speech3' },
-    { path: '/Speak/lydklip4.wav', name: 'speech4' },
-    { path: '/Speak/lydklip5.wav', name: 'speech5' },
-    { path: '/Speak/lydklip6.wav', name: 'speech6' },
-    { path: '/Speak/lydklip7.wav', name: 'speech7' },
-    { path: '/Speak/lydklip8.wav', name: 'speech8' }
+    { path: '/Speak/lydklip1.mp3', name: 'speech' },
+    { path: '/Speak/lydklip2.mp3', name: 'speech2' },
+    { path: '/Speak/lydklip3.mp3', name: 'speech3' },
+    { path: '/Speak/lydklip4.mp3', name: 'speech4' },
+    { path: '/Speak/lydklip5.mp3', name: 'speech5' },
+    { path: '/Speak/lydklip6.mp3', name: 'speech6' },
+    { path: '/Speak/lydklip7.mp3', name: 'speech7' },
+    { path: '/Speak/lydklip8.mp3', name: 'speech8' }
   ]
   
   // Preload audio og vent på at den er loadet
@@ -3018,12 +3063,6 @@ onMounted(() => {
     currentCameraPosition.lerp(targetCameraPosition, 0.08)
     currentLookAt.lerp(targetLookAt, 0.06)
     
-    // Tilføj rotation fra A/D knapperne (kontinuerlig rotation hele vejen rundt) - kun når ikke i landing
-    if (!isInLandingPhase) {
-      if (keys.a) cameraRotationY -= rotationSpeed
-      if (keys.d) cameraRotationY += rotationSpeed
-    }
-    
     // Anvend rotation til lookAt punktet
     // Beregn retning fra kamera til lookAt punkt
     const direction = new THREE.Vector3().subVectors(currentLookAt, currentCameraPosition).normalize()
@@ -3045,18 +3084,7 @@ onMounted(() => {
     mouseOffset.addScaledVector(up, -mouseY)
     
     camera.position.copy(currentCameraPosition).add(mouseOffset)
-    
-    // Roter retningen omkring op-vektoren baseret på cameraRotationY (kun når ikke i landing)
-    if (!isInLandingPhase && cameraRotationY !== 0) {
-      const rotationMatrix = new THREE.Matrix4().makeRotationAxis(up, cameraRotationY)
-      const rotatedDirection = direction.clone().applyMatrix4(rotationMatrix)
-      
-      // Beregn det roterede lookAt punkt
-      const rotatedLookAt = currentCameraPosition.clone().add(rotatedDirection.multiplyScalar(direction.length()))
-      camera.lookAt(rotatedLookAt)
-    } else {
-      camera.lookAt(currentLookAt)
-    }
+    camera.lookAt(currentLookAt)
   }
   
   // Scroll/wheel event handler
@@ -3190,21 +3218,17 @@ onMounted(() => {
   }
   window.addEventListener('mousemove', handleMouseMove, { passive: true })
   
-  // WASD keyboard controls
+  // WS keyboard controls (W/S for path movement)
   handleKeyDown = (event) => {
     const key = event.key.toLowerCase()
     if (key === 'w') keys.w = true
-    if (key === 'a') keys.a = true
     if (key === 's') keys.s = true
-    if (key === 'd') keys.d = true
   }
   
   handleKeyUp = (event) => {
     const key = event.key.toLowerCase()
     if (key === 'w') keys.w = false
-    if (key === 'a') keys.a = false
     if (key === 's') keys.s = false
-    if (key === 'd') keys.d = false
   }
   
   window.addEventListener('keydown', handleKeyDown)
@@ -3475,91 +3499,42 @@ onMounted(() => {
         previousTextIndex = clampedIndex
         fadeState = 'in'
         
-        // Afspil speech audio når første tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 0 && speechAudio && !speechPlayed && speakEnabled.value) {
-          speechPlayed = true
-          speechAudio.volume = 1.0 // Sæt volume til fuld
-          speechAudio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speechPlayed = false
-          })
-        }
+        // Afspil speech audio og paus auto-scroll mens det afspilles
+        const speechAudiosMap = [
+          { audio: speechAudio, played: () => speechPlayed, setPlayed: (v) => speechPlayed = v, index: 0 },
+          { audio: speech2Audio, played: () => speech2Played, setPlayed: (v) => speech2Played = v, index: 1 },
+          { audio: speech3Audio, played: () => speech3Played, setPlayed: (v) => speech3Played = v, index: 2 },
+          { audio: speech4Audio, played: () => speech4Played, setPlayed: (v) => speech4Played = v, index: 3 },
+          { audio: speech5Audio, played: () => speech5Played, setPlayed: (v) => speech5Played = v, index: 4 },
+          { audio: speech6Audio, played: () => speech6Played, setPlayed: (v) => speech6Played = v, index: 5 },
+          { audio: speech7Audio, played: () => speech7Played, setPlayed: (v) => speech7Played = v, index: 6 },
+          { audio: speech8Audio, played: () => speech8Played, setPlayed: (v) => speech8Played = v, index: 7 }
+        ]
         
-        // Afspil speech2 audio når anden tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 1 && speech2Audio && !speech2Played && speakEnabled.value) {
-          speech2Played = true
-          speech2Audio.volume = 1.0 // Sæt volume til fuld
-          speech2Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech2 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech2Played = false
-          })
-        }
-        
-        // Afspil speech3 audio når tredje tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 2 && speech3Audio && !speech3Played && speakEnabled.value) {
-          speech3Played = true
-          speech3Audio.volume = 1.0 // Sæt volume til fuld
-          speech3Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech3 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech3Played = false
-          })
-        }
-        
-        // Afspil speech4 audio når fjerde tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 3 && speech4Audio && !speech4Played && speakEnabled.value) {
-          speech4Played = true
-          speech4Audio.volume = 1.0 // Sæt volume til fuld
-          speech4Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech4 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech4Played = false
-          })
-        }
-        
-        // Afspil speech5 audio når femte tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 4 && speech5Audio && !speech5Played && speakEnabled.value) {
-          speech5Played = true
-          speech5Audio.volume = 1.0 // Sæt volume til fuld
-          speech5Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech5 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech5Played = false
-          })
-        }
-        
-        // Afspil speech6 audio når sjette tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 5 && speech6Audio && !speech6Played && speakEnabled.value) {
-          speech6Played = true
-          speech6Audio.volume = 1.0 // Sæt volume til fuld
-          speech6Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech6 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech6Played = false
-          })
-        }
-        
-        // Afspil speech7 audio når syvende tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 6 && speech7Audio && !speech7Played && speakEnabled.value) {
-          speech7Played = true
-          speech7Audio.volume = 1.0 // Sæt volume til fuld
-          speech7Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech7 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech7Played = false
-          })
-        }
-        
-        // Afspil speech8 audio når ottende tekst vises (kun hvis speak er tændt)
-        if (clampedIndex === 7 && speech8Audio && !speech8Played && speakEnabled.value) {
-          speech8Played = true
-          speech8Audio.volume = 1.0 // Sæt volume til fuld
-          speech8Audio.play().catch(err => {
-            console.warn('Kunne ikke afspille speech8 audio:', err)
-            // Reset så vi kan prøve igen hvis der var en fejl
-            speech8Played = false
+        const speechEntry = speechAudiosMap.find(s => s.index === clampedIndex)
+        if (speechEntry && speechEntry.audio && !speechEntry.played() && speakEnabled.value) {
+          speechEntry.setPlayed(true)
+          speechEntry.audio.volume = 1.0
+          
+          // Sænk auto-scroll fart mens speech afspilles
+          if (isAutoScrolling.value) {
+            autoScrollSpeechPlaying = true
+            // Tilføj ended listener for at gå tilbage til normal fart
+            const onEnded = () => {
+              if (isAutoScrolling.value) {
+                autoScrollSpeechPlaying = false
+              }
+              speechEntry.audio.removeEventListener('ended', onEnded)
+            }
+            speechEntry.audio.addEventListener('ended', onEnded)
+          }
+          
+          speechEntry.audio.play().catch(err => {
+            console.warn(`Kunne ikke afspille speech${clampedIndex > 0 ? clampedIndex + 1 : ''} audio:`, err)
+            speechEntry.setPlayed(false)
+            if (isAutoScrolling.value) {
+              autoScrollSpeechPlaying = false
+            }
           })
         }
         
@@ -3602,6 +3577,32 @@ onMounted(() => {
     const currentTime = performance.now()
     const deltaTime = (currentTime - lastTime) / 1000 // Konverter til sekunder
     lastTime = currentTime
+    
+    // Auto-scroll: Opdater targetScrollProgress automatisk
+    if (isAutoScrolling.value) {
+      let speed = autoScrollSpeed
+      
+      // Hurtigere gennem landing-fasen (0 til 0.03)
+      if (targetScrollProgress < landingScrollThreshold) {
+        speed = autoScrollLandingSpeed
+      }
+      // Medium hastighed fra landing til første tekst (0.03 til 0.1)
+      else if (targetScrollProgress < cameraStartThreshold) {
+        speed = autoScrollTransitionSpeed
+      }
+      // Langsommere mens speak afspilles
+      else if (autoScrollSpeechPlaying) {
+        speed = autoScrollSpeechSpeed
+      }
+      
+      targetScrollProgress = Math.min(1, targetScrollProgress + speed)
+      totalScroll = targetScrollProgress
+      
+      // Stop auto-scroll når vi når enden
+      if (targetScrollProgress >= 1) {
+        stopAutoScroll()
+      }
+    }
     
     // Smooth interpolation af scroll progress (lavere værdi = mere smooth)
     scrollProgress = lerp(scrollProgress, targetScrollProgress, 0.04)
@@ -4464,6 +4465,11 @@ const saveScrollProgress = () => {
 
 
 onUnmounted(() => {
+  // Stop auto-scroll hvis aktiv
+  if (isAutoScrolling.value) {
+    stopAutoScroll()
+  }
+  
   // Unlock body overflow when leaving 3D view
   document.documentElement.classList.remove('locked')
   document.body.classList.remove('locked')
@@ -4662,7 +4668,7 @@ onUnmounted(() => {
       </div>
     </Transition>
     
-    <Nav :opacity="headerLogoOpacity" :on-navigate="saveScrollProgress" />
+    <Nav :opacity="headerLogoOpacity" :is-warmed-up="isWarmedUp" :on-navigate="saveScrollProgress" />
     
     <!-- Audio controls - Atmosphere and Speak toggles -->
     <div class="audio-controls" :style="{ opacity: headerLogoOpacity }">
@@ -4726,18 +4732,17 @@ onUnmounted(() => {
     </div>
     
     
-    <!-- Scroll to explore text that follows mouse -->
-    <div 
-      v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
-      class="scroll-to-explore-text"
-      :style="{ 
-        left: scrollTextX + 'px', 
-        top: scrollTextY + 'px',
-        opacity: landingLogoOpacity
-      }"
-    >
-      {{ soundClicked ? 'scroll to explore' : 'CLICK FOR SOUND' }}
-    </div>
+    <!-- Explore knap på landing page -->
+    <Transition name="fade">
+      <button 
+        v-if="isWarmedUp && scrollProgress < landingScrollThreshold && !isAutoScrolling"
+        class="explore-button"
+        :style="{ opacity: landingLogoOpacity }"
+        @click="startAutoScroll"
+      >
+        Explore
+      </button>
+    </Transition>
     
     <!-- Introduktion tekst med fade effekt -->
     <div 
@@ -4971,6 +4976,34 @@ onUnmounted(() => {
               transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EXPLORE BUTTON - Landing page auto-scroll
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.explore-button {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1002;
+  font-family: 'Boska-Regular', serif;
+  font-size: clamp(0.85rem, 1.1vw, 1.1rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  background: transparent;
+  border: 1px solid rgba(26, 26, 26, 0.3);
+  padding: 0.85rem 2.8rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  backdrop-filter: blur(2px);
+}
+
+.explore-button:active {
+  transform: translate(-50%, -50%) scale(0.97);
 }
 
 @keyframes scrollLineGrow {

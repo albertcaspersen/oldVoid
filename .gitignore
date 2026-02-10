@@ -34,3 +34,6 @@ coverage
 
 # Vitest
 __screenshots__/
+
+# Large archives
+public/pics.zip
