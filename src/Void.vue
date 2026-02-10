@@ -199,10 +199,10 @@ const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
 // Auto-scroll (Explore button) state
 const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
 let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
-const autoScrollSpeed = 0.00012 // Normal hastighed per frame
-const autoScrollSpeechSpeed = 0.00005 // Langsommere hastighed mens speak afspilles
+const autoScrollSpeed = 0.00013 // Normal hastighed per frame
+const autoScrollSpeechSpeed = 0.00007 // Langsommere hastighed mens speak afspilles
 const autoScrollLandingSpeed = 0.0003 // Langsommere hastighed gennem landing-fasen (landing page → start path)
-const autoScrollTransitionSpeed = 0.0002 // Langsommere hastighed fra landing til første tekst
+const autoScrollTransitionSpeed = 0.0005 // Langsommere hastighed fra landing til første tekst
 
 // Ref for landing top SVG element (our landscape designs)
 const landingTopSvgRef = ref(null)
