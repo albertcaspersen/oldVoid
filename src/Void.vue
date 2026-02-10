@@ -201,8 +201,8 @@ const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
 let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
 const autoScrollSpeed = 0.00012 // Normal hastighed per frame
 const autoScrollSpeechSpeed = 0.00005 // Langsommere hastighed mens speak afspilles
-const autoScrollLandingSpeed = 0.0008 // Hurtigere hastighed gennem landing-fasen
-const autoScrollTransitionSpeed = 0.0004 // Medium hastighed fra landing til første tekst
+const autoScrollLandingSpeed = 0.0003 // Langsommere hastighed gennem landing-fasen (landing page → start path)
+const autoScrollTransitionSpeed = 0.0002 // Langsommere hastighed fra landing til første tekst
 
 // Ref for landing top SVG element (our landscape designs)
 const landingTopSvgRef = ref(null)
@@ -1409,7 +1409,7 @@ onMounted(() => {
   const audioFiles = [
     { path: '/sound/Field with Wind, Swallows, & Windchimes - Happy Summer moments 4K NO LOOP.mp3', name: 'nature' },
     { path: '/sound/metalGate.mp3', name: 'metalGate' },
-    { path: '/sound/water.wav', name: 'water' },
+    { path: '/sound/water.mp3', name: 'water' },
     { path: '/sound/bee.wav', name: 'bask' },
     { path: '/Speak/lydklip1.mp3', name: 'speech' },
     { path: '/Speak/lydklip2.mp3', name: 'speech2' },
@@ -1459,23 +1459,23 @@ onMounted(() => {
     
     // Case billeder der skal preloades
     const caseImages = [
-      '/pics/casesPics/ACoastalGarden.png',
-      '/pics/casesPics/ACottageGarden.png',
-      '/pics/casesPics/AModernGarden.png',
-      '/pics/casesPics/ARuralGarden.png',
-      '/pics/casesPics/BeachHouse.png',
-      '/pics/casesPics/BrightonGarden.png',
-      '/pics/casesPics/CobhamGarden.png',
-      '/pics/casesPics/CopenhagenGarden.png',
-      '/pics/casesPics/CourtyardGarden.png',
-      '/pics/casesPics/CPHGarden.png',
-      '/pics/casesPics/EntertainmentGarden.png',
-      '/pics/casesPics/LondonGarden.png',
-      '/pics/casesPics/OxshottGarden.png',
-      '/pics/casesPics/SeasideGarden.png',
-      '/pics/casesPics/St.GeorgesHill.png',
-      '/pics/casesPics/SummerHouse.png',
-      '/pics/casesPics/TudorHouse.png'
+      '/pics/casesPics/acoastalgarden-min.jpg',
+      '/pics/casesPics/acottagegarden-min.jpg',
+      '/pics/casesPics/AModernGarden-min.png',
+      '/pics/casesPics/aruralgarden-min.jpg',
+      '/pics/casesPics/beachhouse-min.jpg',
+      '/pics/casesPics/brightongarden-min.jpg',
+      '/pics/casesPics/cobham-min.jpg',
+      '/pics/casesPics/copenhagengarden-min.jpg',
+      '/pics/casesPics/courtyardgarden-min.png',
+      '/pics/casesPics/cphgarden-min.jpg',
+      '/pics/casesPics/entertainmentgarden-min.jpg',
+      '/pics/casesPics/londongarden-min.jpg',
+      '/pics/casesPics/Our-Landscape-Designs-Oxshott-Garden-Plan-Ourlandscapedesigns.com_-min-min.png',
+      '/pics/casesPics/Our-Landscape-Designs-garden-design-designer-Ourlandscapedesigns.com-copy-min-min.jpg',
+      '/pics/casesPics/stgeorgeshill-min.png',
+      '/pics/casesPics/summerhouse-min.jpg',
+      '/pics/casesPics/tudorhouse.jpg'
     ]
     
     // Total items: paper texture + pen model + brush model + scene billeder + case billeder + audio filer

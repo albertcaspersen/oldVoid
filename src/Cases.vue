@@ -18,23 +18,23 @@ let isRunning = false
 const ease = 0.08
 
 const cases = [
-  { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/ACoastalGarden.png' },
-  { id: 2, title: 'A Cottage Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/ACottageGarden.png' },
-  { id: 3, title: 'A Modern Garden', location: 'Urban', category: 'urban', year: '2024', image: '/pics/casesPics/AModernGarden.png' },
-  { id: 4, title: 'A Rural Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/ARuralGarden.png' },
-  { id: 5, title: 'Beach House', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/BeachHouse.png' },
-  { id: 6, title: 'Brighton Garden', location: 'Brighton', category: 'residential', year: '2024', image: '/pics/casesPics/BrightonGarden.png' },
-  { id: 7, title: 'Cobham Garden', location: 'Cobham', category: 'residential', year: '2023', image: '/pics/casesPics/CobhamGarden.png' },
-  { id: 8, title: 'Copenhagen Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/CopenhagenGarden.png' },
-  { id: 9, title: 'Courtyard Garden', location: 'Urban', category: 'urban', year: '2023', image: '/pics/casesPics/CourtyardGarden.png' },
-  { id: 10, title: 'CPH Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/CPHGarden.png' },
-  { id: 11, title: 'Entertainment Garden', location: 'Estate', category: 'estate', year: '2023', image: '/pics/casesPics/EntertainmentGarden.png' },
-  { id: 12, title: 'London Garden', location: 'London', category: 'urban', year: '2024', image: '/pics/casesPics/LondonGarden.png' },
-  { id: 13, title: 'Oxshott Garden', location: 'Oxshott', category: 'residential', year: '2024', image: '/pics/casesPics/OxshottGarden.png' },
-  { id: 14, title: 'Seaside Garden', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/SeasideGarden.png' },
-  { id: 15, title: 'St. Georges Hill', location: 'Surrey', category: 'estate', year: '2024', image: '/pics/casesPics/St.GeorgesHill.png' },
-  { id: 16, title: 'Summer House', location: 'Countryside', category: 'residential', year: '2023', image: '/pics/casesPics/SummerHouse.png' },
-  { id: 17, title: 'Tudor House', location: 'Historic', category: 'residential', year: '2024', image: '/pics/casesPics/TudorHouse.png' }
+  { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
+  { id: 2, title: 'A Cottage Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/acottagegarden-min.jpg' },
+  { id: 3, title: 'A Modern Garden', location: 'Urban', category: 'urban', year: '2024', image: '/pics/casesPics/AModernGarden-min.png' },
+  { id: 4, title: 'A Rural Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/aruralgarden-min.jpg' },
+  { id: 5, title: 'Beach House', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/beachhouse-min.jpg' },
+  { id: 6, title: 'Brighton Garden', location: 'Brighton', category: 'residential', year: '2024', image: '/pics/casesPics/brightongarden-min.jpg' },
+  { id: 7, title: 'Cobham Garden', location: 'Cobham', category: 'residential', year: '2023', image: '/pics/casesPics/cobham-min.jpg' },
+  { id: 8, title: 'Copenhagen Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/copenhagengarden-min.jpg' },
+  { id: 9, title: 'Courtyard Garden', location: 'Urban', category: 'urban', year: '2023', image: '/pics/casesPics/courtyardgarden-min.png' },
+  { id: 10, title: 'CPH Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/cphgarden-min.jpg' },
+  { id: 11, title: 'Entertainment Garden', location: 'Estate', category: 'estate', year: '2023', image: '/pics/casesPics/entertainmentgarden-min.jpg' },
+  { id: 12, title: 'London Garden', location: 'London', category: 'urban', year: '2024', image: '/pics/casesPics/londongarden-min.jpg' },
+  { id: 13, title: 'Oxshott Garden', location: 'Oxshott', category: 'residential', year: '2024', image: '/pics/casesPics/Our-Landscape-Designs-Oxshott-Garden-Plan-Ourlandscapedesigns.com_-min-min.png' },
+  { id: 14, title: 'Seaside Garden', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/Our-Landscape-Designs-garden-design-designer-Ourlandscapedesigns.com-copy-min-min.jpg' },
+  { id: 15, title: 'St. Georges Hill', location: 'Surrey', category: 'estate', year: '2024', image: '/pics/casesPics/stgeorgeshill-min.png' },
+  { id: 16, title: 'Summer House', location: 'Countryside', category: 'residential', year: '2023', image: '/pics/casesPics/summerhouse-min.jpg' },
+  { id: 17, title: 'Tudor House', location: 'Historic', category: 'residential', year: '2024', image: '/pics/casesPics/tudorhouse.jpg' }
 ]
 
 const currentCaseIndex = ref(0)
@@ -106,6 +106,22 @@ function loadAllTextures() {
           loadedTexture.encoding = THREE.sRGBEncoding
         }
         loadedTexture.needsUpdate = true
+
+        // Cover-mapping: crop billedet i stedet for at maske det (object-fit: cover)
+        const img = loadedTexture.image
+        if (img && img.width && img.height) {
+          const imgAspect = img.width / img.height
+          const planeAspect = PLANE_WIDTH / PLANE_HEIGHT
+          loadedTexture.wrapS = THREE.ClampToEdge
+          loadedTexture.wrapT = THREE.ClampToEdge
+          if (imgAspect > planeAspect) {
+            loadedTexture.repeat.set(planeAspect / imgAspect, 1)
+            loadedTexture.offset.set((1 - planeAspect / imgAspect) / 2, 0)
+          } else if (imgAspect < planeAspect) {
+            loadedTexture.repeat.set(1, imgAspect / planeAspect)
+            loadedTexture.offset.set(0, (1 - imgAspect / planeAspect) / 2)
+          }
+        }
         
         // Opdater materialet med den loadede tekstur
         mesh.material.map = loadedTexture
