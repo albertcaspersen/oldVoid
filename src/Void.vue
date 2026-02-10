@@ -215,18 +215,20 @@ let targetScrollTextY = 0 // Target Y position for smooth interpolation
 const soundClicked = ref(false) // Track if user has clicked for sound
 
 // Lås speech audio op for mobil (iOS Safari kræver user gesture før play() virker)
+let speechAudioUnlocked = false
 const unlockSpeechAudioForMobile = () => {
+  if (speechAudioUnlocked) return // Kun én gang
+  speechAudioUnlocked = true
   const speechAudios = [speechAudio, speech2Audio, speech3Audio, speech4Audio, speech5Audio, speech6Audio, speech7Audio, speech8Audio]
   speechAudios.forEach((audio) => {
-    if (audio && speakEnabled.value) {
-      const originalVolume = audio.volume
-      audio.volume = 0 // Mute under unlock så der ikke afspilles lyd
+    if (audio) {
+      audio.muted = true // Muted er pålideligt lydløs på iOS (i modsætning til volume=0)
       audio.play().then(() => {
         audio.pause()
         audio.currentTime = 0
-        audio.volume = originalVolume
+        audio.muted = false
       }).catch(() => {
-        audio.volume = originalVolume
+        audio.muted = false
       })
     }
   })
