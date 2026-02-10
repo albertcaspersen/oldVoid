@@ -1488,100 +1488,97 @@ onMounted(() => {
     await new Promise(resolve => setTimeout(resolve, 10))
     
     try {
-      // 1. Load papir tekstur
-      warmUpStatus.value = 'Loader papir tekstur...'
-      paperTexture = await loadTextureAsync('/texture/paper.png')
+      // 1-3. Load papir tekstur + 3D models parallelt (ingen delays)
+      warmUpStatus.value = 'Loading textures & models...'
+      const [loadedPaperTexture] = await Promise.all([
+        loadTextureAsync('/texture/paper.png'),
+        loadPenModelAsync().then(() => updateWarmUpProgress('Pen model loaded')),
+        loadBrushModelAsync().then(() => updateWarmUpProgress('Brush model loaded'))
+      ])
+      
+      // Setup papir tekstur
+      paperTexture = loadedPaperTexture
       paperTexture.wrapS = THREE.RepeatWrapping
       paperTexture.wrapT = THREE.RepeatWrapping
-      paperTexture.repeat.set(8, 8) // Reduceret repeat for større tekstur = mere detaljer
-      // Bedre texture filtering for skarpere detaljer
+      paperTexture.repeat.set(8, 8)
       paperTexture.magFilter = THREE.LinearFilter
       paperTexture.minFilter = THREE.LinearMipmapLinearFilter
       paperTexture.generateMipmaps = true
       paperTexture.anisotropy = renderer.capabilities.getMaxAnisotropy() || 16
-      // Opdater plane material med den loadede tekstur
       if (plane && plane.material) {
         plane.material.map = paperTexture
         plane.material.needsUpdate = true
       }
-      // Force GPU upload af papir tekstur
       renderer.initTexture(paperTexture)
-      // Vent ekstra for at sikre GPU har processeret teksturen
-      await new Promise(resolve => setTimeout(resolve, 100))
       updateWarmUpProgress('Paper texture loaded')
       
-      // 2. Load pen model
-      warmUpStatus.value = 'Loading 3D models...'
-      await loadPenModelAsync()
-      // Vent efter model loading for at sikre GPU processing
-      await new Promise(resolve => setTimeout(resolve, 150))
-      updateWarmUpProgress('Pen model loaded')
-      
-      // 3. Load brush model
-      await loadBrushModelAsync()
-      // Vent efter model loading for at sikre GPU processing
-      await new Promise(resolve => setTimeout(resolve, 150))
-      updateWarmUpProgress('Brush model loaded')
-      
-      // 4. Preload ALLE scene billeder for at undgå lag under scrolling
+      // 4. Preload ALLE scene billeder parallelt (concurrency: 5)
       warmUpStatus.value = `Preloading ${imagesToPreload.length} scene images...`
       
-      for (let i = 0; i < imagesToPreload.length; i++) {
-        const config = imagesToPreload[i]
-        // Find det tilsvarende sceneImage og load dets tekstur
-        const imageData = sceneImages.find(img => img.config.path === config.path && 
-          img.config.position[0] === config.position[0] &&
-          img.config.position[1] === config.position[1] &&
-          img.config.position[2] === config.position[2])
+      {
+        let sceneLoaded = 0
+        const sceneLoadTasks = imagesToPreload.map((config) => {
+          const imageData = sceneImages.find(img => img.config.path === config.path && 
+            img.config.position[0] === config.position[0] &&
+            img.config.position[1] === config.position[1] &&
+            img.config.position[2] === config.position[2])
+          return { config, imageData }
+        })
         
-        if (imageData && !imageData.textureLoaded && !imageData.textureLoading) {
-          await loadImageTextureAsync(imageData)
-          // Force GPU upload af teksturen for at undgå lag senere
-          if (imageData.texture) {
-            renderer.initTexture(imageData.texture)
-            // Vent ekstra for at sikre GPU har processeret teksturen
-            await new Promise(resolve => setTimeout(resolve, 50))
+        let taskIndex = 0
+        const runWorker = async () => {
+          while (taskIndex < sceneLoadTasks.length) {
+            const idx = taskIndex++
+            const { imageData } = sceneLoadTasks[idx]
+            if (imageData && !imageData.textureLoaded && !imageData.textureLoading) {
+              await loadImageTextureAsync(imageData)
+              if (imageData.texture) {
+                renderer.initTexture(imageData.texture)
+              }
+            }
+            sceneLoaded++
+            warmUpStatus.value = `Preloading scene image ${sceneLoaded}/${imagesToPreload.length}...`
+            updateWarmUpProgress(`Scene image ${sceneLoaded}/${imagesToPreload.length} loaded`)
           }
         }
-        warmUpStatus.value = `Preloading scene image ${i + 1}/${imagesToPreload.length}...`
-        updateWarmUpProgress(`Scene image ${i + 1}/${imagesToPreload.length} loaded`)
+        await Promise.all(Array.from({ length: Math.min(5, sceneLoadTasks.length) }, runWorker))
       }
       
-      // Ekstra ventetid efter alle billeder er loadet for at sikre GPU processing
-      warmUpStatus.value = 'Processing textures...'
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      // 5. Preload case billeder
+      // 5. Preload case billeder parallelt (concurrency: 5)
       warmUpStatus.value = `Preloading ${caseImages.length} case images...`
       
-      for (let i = 0; i < caseImages.length; i++) {
-        const imagePath = caseImages[i]
-        try {
-          const texture = await loadTextureAsync(imagePath)
-          // Force GPU upload af teksturen for at undgå lag senere
-          renderer.initTexture(texture)
-          // Vent ekstra for at sikre GPU har processeret teksturen
-          await new Promise(resolve => setTimeout(resolve, 50))
-          warmUpStatus.value = `Preloading case image ${i + 1}/${caseImages.length}...`
-          updateWarmUpProgress(`Case image ${i + 1}/${caseImages.length} loaded`)
-        } catch (error) {
-          console.warn(`Failed to preload case image: ${imagePath}`, error)
-          warmUpStatus.value = `Preloading case image ${i + 1}/${caseImages.length}...`
-          updateWarmUpProgress(`Case image ${i + 1}/${caseImages.length} skipped`)
+      {
+        let caseLoaded = 0
+        let caseTaskIndex = 0
+        const runCaseWorker = async () => {
+          while (caseTaskIndex < caseImages.length) {
+            const idx = caseTaskIndex++
+            const imagePath = caseImages[idx]
+            try {
+              const texture = await loadTextureAsync(imagePath)
+              renderer.initTexture(texture)
+            } catch (error) {
+              console.warn(`Failed to preload case image: ${imagePath}`, error)
+            }
+            caseLoaded++
+            warmUpStatus.value = `Preloading case image ${caseLoaded}/${caseImages.length}...`
+            updateWarmUpProgress(`Case image ${caseLoaded}/${caseImages.length} loaded`)
+          }
         }
+        await Promise.all(Array.from({ length: Math.min(5, caseImages.length) }, runCaseWorker))
       }
       
-      // Ekstra ventetid efter alle case billeder er loadet
-      warmUpStatus.value = 'Processing case images...'
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      // 6. Preload audio filer
+      // 6. Preload alle audio filer parallelt (ingen delays)
       warmUpStatus.value = `Preloading ${audioFiles.length} audio files...`
       
-      for (let i = 0; i < audioFiles.length; i++) {
-        const result = await preloadAudio(audioFiles[i])
-        
-        // Gem audio references
+      const audioResults = await Promise.all(audioFiles.map(async (audioFile) => {
+        const result = await preloadAudio(audioFile)
+        updateWarmUpProgress(`Audio ${result.name} loaded`)
+        return result
+      }))
+      
+      // Gem audio references
+      for (const result of audioResults) {
         if (result.success && result.audio) {
           switch (result.name) {
             case 'nature':
@@ -1646,59 +1643,38 @@ onMounted(() => {
               break
           }
         }
-        
-        warmUpStatus.value = `Preloading audio ${i + 1}/${audioFiles.length}...`
-        updateWarmUpProgress(`Audio ${result.name} loaded`)
-        // Vent kort efter hver audio fil for at sikre den er helt klar
-        await new Promise(resolve => setTimeout(resolve, 50))
       }
+      warmUpStatus.value = 'Audio preloaded'
       
-      // Ekstra ventetid efter alle audio filer er loadet
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // 7. Render et par frames for at "varme" GPU'en op og kompilere shaders
-      // Progress er nu omkring 95-98%, opdater den til 100% under GPU warm-up
+      // 7. GPU warm-up: render et par frames for at kompilere shaders (reduceret, ingen delays)
       warmUpStatus.value = 'Warming up GPU...'
       
-      // Gem original kamera position
       const originalCameraPos = camera.position.clone()
       const originalCameraRot = camera.rotation.clone()
       
-      // Flyt kameraet rundt for at tvinge alle billeder til at rendere
-      // Dette compiler shaders og uploader alle teksturer til GPU
-      // GPU warm-up er inkluderet i progress så den når 100% når alt er færdigt
-      const gpuWarmUpFrames = 10
+      // 4 frames er nok til at kompilere shaders og uploade teksturer
+      const gpuWarmUpFrames = 4
       for (let i = 0; i <= gpuWarmUpFrames; i++) {
-        // Flyt kameraet langs pathen
         const t = i / gpuWarmUpFrames
         const pathPoint = cameraPath.getPoint(t)
         camera.position.copy(pathPoint)
         
-        // Gør alle billeder midlertidigt synlige for at tvinge GPU upload
         sceneImages.forEach(img => {
           if (img.imagePlane) img.imagePlane.visible = true
           if (img.shadowPlane) img.shadowPlane.visible = true
         })
         
         renderer.render(scene, camera)
-        // Ventetid for GPU processing
-        await new Promise(resolve => setTimeout(resolve, 30))
         
-        // Opdater progress fra 95% til 100% under GPU warm-up
         const gpuProgress = 95 + Math.round((i / gpuWarmUpFrames) * 5)
         warmUpProgress.value = Math.min(100, gpuProgress)
-        if (i % 2 === 0) {
-          warmUpStatus.value = `Warming up GPU... ${gpuProgress}%`
-        }
+        warmUpStatus.value = `Warming up GPU... ${gpuProgress}%`
       }
       
-      // Sidste finalizing - progress er nu 100%
+      // Finalizing
       warmUpStatus.value = 'Finalizing...'
       warmUpProgress.value = 100
-      for (let i = 0; i < 2; i++) {
-        renderer.render(scene, camera)
-        await new Promise(resolve => setTimeout(resolve, 10))
-      }
+      renderer.render(scene, camera)
       
       // Hvis vi vender tilbage fra en anden side, behold den gemte position
       if (!isReturningFromPage) {
