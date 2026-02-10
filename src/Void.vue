@@ -214,6 +214,19 @@ let targetScrollTextX = 0 // Target X position for smooth interpolation
 let targetScrollTextY = 0 // Target Y position for smooth interpolation
 const soundClicked = ref(false) // Track if user has clicked for sound
 
+// Lås speech audio op for mobil (iOS Safari kræver user gesture før play() virker)
+const unlockSpeechAudioForMobile = () => {
+  const speechAudios = [speechAudio, speech2Audio, speech3Audio, speech4Audio, speech5Audio, speech6Audio, speech7Audio, speech8Audio]
+  speechAudios.forEach((audio) => {
+    if (audio && speakEnabled.value) {
+      audio.play().then(() => {
+        audio.pause()
+        audio.currentTime = 0
+      }).catch(() => {})
+    }
+  })
+}
+
 // Click handler for sound on landing page
 const handleSoundClick = () => {
   if (!soundClicked.value && scrollProgress < landingScrollThreshold) {
@@ -224,6 +237,8 @@ const handleSoundClick = () => {
         console.warn('Kunne ikke starte audio:', err)
       })
     }
+    // Lås speech audio op for mobil (iOS Safari)
+    unlockSpeechAudioForMobile()
   }
 }
 
@@ -243,6 +258,8 @@ const startAutoScroll = () => {
       console.warn('Kunne ikke starte audio:', err)
     })
   }
+  // Lås speech audio op for mobil (iOS Safari)
+  unlockSpeechAudioForMobile()
   
   // Deaktiver manuel scrolling
   if (handleScroll) {
@@ -1759,6 +1776,18 @@ onMounted(() => {
         // Marker at hele 3D oplevelsen er loadet og klar
         isWarmedUp.value = true
         
+        // Mobil: Lås speech audio op ved første touch (iOS Safari kræver user gesture)
+        const handleFirstTouch = () => {
+          if (!soundClicked.value) {
+            soundClicked.value = true
+            if (natureAudio && atmosphereEnabled.value && natureAudio.paused) {
+              natureAudio.play().catch(() => {})
+            }
+            unlockSpeechAudioForMobile()
+          }
+        }
+        window.addEventListener('touchstart', handleFirstTouch, { passive: true, once: true })
+        
         // Start landing page animation - hele 3D oplevelsen er nu loadet
         if (!isReturningFromPage) {
           // Sikr at landing logo er synligt når warm-up er færdig
@@ -1808,6 +1837,18 @@ onMounted(() => {
           currentLookAt = lookAtPos.clone()
           targetLookAt = lookAtPos.clone()
         }
+        
+        // Mobil: Lås speech audio op ved første touch (iOS Safari)
+        const handleFirstTouchReturn = () => {
+          if (!soundClicked.value) {
+            soundClicked.value = true
+            if (natureAudio && atmosphereEnabled.value && natureAudio.paused) {
+              natureAudio.play().catch(() => {})
+            }
+            unlockSpeechAudioForMobile()
+          }
+        }
+        window.addEventListener('touchstart', handleFirstTouchReturn, { passive: true, once: true })
         
         // isWarmedUp is already set to true earlier
       }
