@@ -140,7 +140,6 @@ onMounted(() => {
   
   if (isMobile) {
     // On mobile: use native scrolling with IntersectionObserver for animations
-    visibleSections.value.add('hero')
     
     // IntersectionObserver for staggered reveal animations
     const observerOptions = {
@@ -165,6 +164,9 @@ onMounted(() => {
       document.querySelectorAll('[data-section]').forEach(el => {
         mobileObserver.observe(el)
       })
+      
+      // Hero is immediately visible
+      visibleSections.value.add('hero')
     }, 100)
     
     return

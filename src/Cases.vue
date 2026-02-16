@@ -386,7 +386,10 @@ onMounted(() => {
       renderer.setSize(canvasRef.value.clientWidth, canvasRef.value.clientHeight)
     })
 
-    visibleSections.value.add('hero')
+    // Hero is visible after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      visibleSections.value.add('hero')
+    }, 100)
   })
 })
 
