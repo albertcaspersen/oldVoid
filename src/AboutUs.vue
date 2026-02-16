@@ -1279,7 +1279,7 @@ html.smooth-scroll-active .scroll-container {
   
   .member-info.member-0 {
     grid-column: 1 / -1;
-    grid-row: 5;
+    grid-row: 3;
   }
   
   .member-image-wrapper.member-1 {
@@ -1289,7 +1289,7 @@ html.smooth-scroll-active .scroll-container {
   
   .member-info.member-1 {
     grid-column: 1 / -1;
-    grid-row: 3;
+    grid-row: 5;
   }
   
   .member-image-wrapper.member-1 .member-image-container {
