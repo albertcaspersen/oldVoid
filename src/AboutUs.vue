@@ -483,7 +483,7 @@ onUnmounted(() => {
           <span class="title-line title-accent">us</span>
         </h1>
         <p class="hero-subtitle" :class="{ visible: visibleSections.has('hero') }">
-          Where gardens become art
+          
         </p>
       </div>
     </section>
@@ -1074,7 +1074,7 @@ html.smooth-scroll-active body {
 }
 
 .services-intro {
-  font-size: clamp(0.9rem, 1.2vw, 1rem);
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
   line-height: 1.8;
   color: #f5f3ef;
   font-family: 'Boska', Georgia, serif;

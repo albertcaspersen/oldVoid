@@ -17,6 +17,9 @@ let rafId = null
 let isRunning = false
 const ease = 0.08
 
+// Touch state for mobile
+let touchStartY = 0
+
 const cases = [
   { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
   { id: 2, title: 'A Cottage Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/acottagegarden-min.jpg' },
@@ -325,12 +328,30 @@ const handleWheel = (e) => {
   startLoop()
 }
 
+// Touch handlers for mobile
+const handleTouchStart = (e) => {
+  touchStartY = e.touches[0].clientY
+}
+
+const handleTouchMove = (e) => {
+  e.preventDefault()
+  const touchY = e.touches[0].clientY
+  const delta = (touchStartY - touchY) * 1.5
+  touchStartY = touchY
+  
+  const maxScroll = scrollContainer.value.scrollHeight - window.innerHeight
+  targetScroll = Math.max(0, Math.min(targetScroll + delta, maxScroll))
+  startLoop()
+}
+
 onMounted(() => {
   document.documentElement.classList.add('smooth-scroll-active')
   nextTick(() => {
     initThree()
     document.body.style.height = `${scrollContainer.value.scrollHeight}px`
     window.addEventListener('wheel', handleWheel, { passive: false })
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
     window.addEventListener('resize', () => {
       document.body.style.height = `${scrollContainer.value.scrollHeight}px`
       const aspect = canvasRef.value.clientWidth / canvasRef.value.clientHeight
@@ -349,6 +370,8 @@ onUnmounted(() => {
   cancelAnimationFrame(animationId)
   cancelAnimationFrame(rafId)
   window.removeEventListener('wheel', handleWheel)
+  window.removeEventListener('touchstart', handleTouchStart)
+  window.removeEventListener('touchmove', handleTouchMove)
   document.documentElement.classList.remove('smooth-scroll-active')
 })
 </script>
