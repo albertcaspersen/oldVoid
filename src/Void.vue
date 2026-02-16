@@ -365,7 +365,7 @@ const textSectionRatioOverrides = {
   4: 0.82, // 'The on-site craftsmanship begins...'
   5: 0.75, // 'Each element is deliberately placed...'
   6: 0.75, // 'Your dream garden takes shape...'
-  7: 0.55  // 'The result is a tailor-made garden...'
+  7: 0.75  // 'The result is a tailor-made garden...'
 }
 let isScrollingBackToStart = false
 
@@ -1442,13 +1442,34 @@ onMounted(() => {
   
   create3DNavigation()
   
-  // Opret renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.setPixelRatio(window.devicePixelRatio)
+  // PERFORMANCE: Tjek skærmstørrelse for adaptive optimering
+  const screenWidth = window.innerWidth
+  const screenHeight = window.innerHeight
+  const isLargeScreen = screenWidth >= 2560 || screenHeight >= 1440 // 27" skærm eller større
+  const isMediumScreen = screenWidth >= 1920 || screenHeight >= 1080
+  
+  // PERFORMANCE: Begræns pixel ratio på store skærme for at reducere rendering load
+  // På 27" Retina skærme kan devicePixelRatio være 2.0, som renderer 4x så mange pixels
+  let maxPixelRatio = window.devicePixelRatio
+  if (isLargeScreen) {
+    maxPixelRatio = Math.min(window.devicePixelRatio, 1.0) // Store skærme: cap ved 1.0
+  } else if (isMediumScreen) {
+    maxPixelRatio = Math.min(window.devicePixelRatio, 1.5) // Medium skærme: cap ved 1.5
+  }
+  
+  // PERFORMANCE: Disable antialiasing på store skærme (pixels er små nok til at det ikke ses)
+  const useAntialiasing = !isLargeScreen
+  
+  // Opret renderer med adaptive settings
+  renderer = new THREE.WebGLRenderer({ antialias: useAntialiasing })
+  renderer.setSize(screenWidth, screenHeight)
+  renderer.setPixelRatio(maxPixelRatio)
   renderer.shadowMap.enabled = true // Aktivér skygger
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap // Blød skygge
+  // PERFORMANCE: Brug hurtigere shadow map type på store skærme
+  renderer.shadowMap.type = isLargeScreen ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap
   containerRef.value.appendChild(renderer.domElement)
+  
+  console.log(`[PERFORMANCE] Screen: ${screenWidth}x${screenHeight}, PixelRatio: ${maxPixelRatio.toFixed(2)}, Antialiasing: ${useAntialiasing}, LargeScreen: ${isLargeScreen}`)
   
   // Texture loader (bruges til alle teksturer)
   const textureLoader = new THREE.TextureLoader()
@@ -2888,8 +2909,10 @@ onMounted(() => {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5) // Øget intensitet
   directionalLight.position.set(10, 10, 5)
   directionalLight.castShadow = true // Kast skygger
-  directionalLight.shadow.mapSize.width = 2048 // Optimized opløsning for bedre performance
-  directionalLight.shadow.mapSize.height = 2048
+  // PERFORMANCE: Reducer shadow map størrelse på store skærme (1024 vs 2048 = 4x færre pixels)
+  const shadowMapSize = isLargeScreen ? 1024 : (isMediumScreen ? 1536 : 2048)
+  directionalLight.shadow.mapSize.width = shadowMapSize
+  directionalLight.shadow.mapSize.height = shadowMapSize
   directionalLight.shadow.camera.near = 0.5
   directionalLight.shadow.camera.far = 50
   directionalLight.shadow.camera.left = -25
@@ -4951,16 +4974,14 @@ onUnmounted(() => {
     
     
     <!-- Explore knap på landing page -->
-    <Transition name="fade">
-      <button 
-        v-if="isWarmedUp && scrollProgress < landingScrollThreshold && !isAutoScrolling"
-        class="explore-button"
-        :style="{ opacity: landingLogoOpacity }"
-        @click="startAutoScroll"
-      >
-        Explore
-      </button>
-    </Transition>
+    <button 
+      v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
+      class="explore-button"
+      :style="{ opacity: landingLogoOpacity }"
+      @click="startAutoScroll"
+    >
+      Explore
+    </button>
     
     <!-- Introduktion tekst med fade effekt -->
     <div 
@@ -5303,7 +5324,7 @@ onUnmounted(() => {
   border: 1px solid rgba(26, 26, 26, 0.3);
   padding: 0.85rem 2.8rem;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
   backdrop-filter: blur(2px);
 }

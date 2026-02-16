@@ -500,8 +500,7 @@ onUnmounted(() => {
         </div>
       </section>
       
-      <!-- Footer -->
-      <Footer />
+
     </div>
   </div>
 </template>
@@ -809,6 +808,7 @@ body {
   font-size: clamp(0.8rem, 1vw, 0.9rem);
   letter-spacing: 0.05em;
   transition: all 0.3s ease;
+  font-variant-numeric: lining-nums;
 }
 
 .contact-phone:hover {
