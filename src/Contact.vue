@@ -536,6 +536,12 @@ onUnmounted(() => {
         </div>
       </section>
       
+      <!-- Footer copyright -->
+      <footer class="footer-copyright">
+        <div class="grid-container">
+          <p class="grid-col-12">&copy; {{ new Date().getFullYear() }} Our Landscape Designs. All rights reserved.</p>
+        </div>
+      </footer>
 
     </div>
   </div>
@@ -940,5 +946,23 @@ body {
     font-size: clamp(0.875rem, 3vw, 1rem);
     word-break: break-word;
   }
+}
+
+/* ===== Footer Copyright ===== */
+.footer-copyright {
+  position: relative;
+  padding: clamp(1.5rem, 2vh, 2rem) 0;
+  text-align: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 1;
+}
+
+.footer-copyright p {
+  font-family: 'Boska', Georgia, serif;
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
+  font-weight: 300;
+  color: #1a1a1a;
+  opacity: 0.5;
+  margin: 0;
 }
 </style>
