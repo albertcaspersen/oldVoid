@@ -365,6 +365,7 @@ onUnmounted(() => {
     ref="canvasRef"
     :alt="alt"
     class="noise-wipe-image"
+    :style="{ opacity: wipeProgress > 0 ? 1 : 0 }"
   ></canvas>
 </template>
 
