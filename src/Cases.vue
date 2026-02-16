@@ -336,7 +336,7 @@ const handleTouchStart = (e) => {
 const handleTouchMove = (e) => {
   e.preventDefault()
   const touchY = e.touches[0].clientY
-  const delta = (touchStartY - touchY) * 4
+  const delta = (touchStartY - touchY) * 6
   touchStartY = touchY
   
   const maxScroll = scrollContainer.value.scrollHeight - window.innerHeight
