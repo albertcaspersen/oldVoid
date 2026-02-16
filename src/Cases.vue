@@ -19,6 +19,7 @@ const ease = 0.08
 
 // Touch state for mobile
 let touchStartY = 0
+let isMobile = false
 
 const cases = [
   { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
@@ -345,23 +346,33 @@ const handleTouchMove = (e) => {
 }
 
 onMounted(() => {
-  document.documentElement.classList.add('smooth-scroll-active')
+  // Decide whether to use custom smooth scrolling or native mobile scrolling
+  isMobile = window.innerWidth <= 900
+
   nextTick(() => {
     initThree()
-    document.body.style.height = `${scrollContainer.value.scrollHeight}px`
-    window.addEventListener('wheel', handleWheel, { passive: false })
-    window.addEventListener('touchstart', handleTouchStart, { passive: true })
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    window.addEventListener('resize', () => {
+
+    if (!isMobile) {
+      document.documentElement.classList.add('smooth-scroll-active')
       document.body.style.height = `${scrollContainer.value.scrollHeight}px`
+      window.addEventListener('wheel', handleWheel, { passive: false })
+      window.addEventListener('touchstart', handleTouchStart, { passive: true })
+      window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    }
+
+    // Resize handler (always update three renderer)
+    window.addEventListener('resize', () => {
+      if (!isMobile) {
+        document.body.style.height = `${scrollContainer.value.scrollHeight}px`
+      }
       const aspect = canvasRef.value.clientWidth / canvasRef.value.clientHeight
-      const isMobile = window.innerWidth <= 900
-      const fov = isMobile ? 60 : 35
+      const mobileFov = window.innerWidth <= 900 ? 60 : 35
       camera.aspect = aspect
-      camera.fov = fov
+      camera.fov = mobileFov
       camera.updateProjectionMatrix()
       renderer.setSize(canvasRef.value.clientWidth, canvasRef.value.clientHeight)
     })
+
     visibleSections.value.add('hero')
   })
 })
@@ -369,10 +380,12 @@ onMounted(() => {
 onUnmounted(() => {
   cancelAnimationFrame(animationId)
   cancelAnimationFrame(rafId)
-  window.removeEventListener('wheel', handleWheel)
-  window.removeEventListener('touchstart', handleTouchStart)
-  window.removeEventListener('touchmove', handleTouchMove)
-  document.documentElement.classList.remove('smooth-scroll-active')
+  if (!isMobile) {
+    window.removeEventListener('wheel', handleWheel)
+    window.removeEventListener('touchstart', handleTouchStart)
+    window.removeEventListener('touchmove', handleTouchMove)
+    document.documentElement.classList.remove('smooth-scroll-active')
+  }
 })
 </script>
 
@@ -478,6 +491,12 @@ html.smooth-scroll-active body {
 }
 
 .scroll-container {
+  position: static;
+  width: 100%;
+  background: #F0EEE9;
+}
+
+html.smooth-scroll-active .scroll-container {
   position: fixed;
   top: 0; left: 0; width: 100%;
   background: #F0EEE9;

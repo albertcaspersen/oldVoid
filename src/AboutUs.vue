@@ -16,6 +16,7 @@ let targetScroll = 0
 let rafId = null
 let isRunning = false
 const ease = 0.08 // Lower = more smooth/slow, Higher = more responsive
+let isMobile = false
 
 // Team members visibility for wipe animation
 const visibleSections = ref(new Set())
@@ -189,24 +190,28 @@ const updateBodyHeight = () => {
 
 onMounted(() => {
   windowHeight.value = window.innerHeight
-  
-  // Enable smooth scroll mode
-  document.documentElement.classList.add('smooth-scroll-active')
-  
-  // Wait for content to render
-  setTimeout(() => {
-    updateBodyHeight()
-    
-    // Wheel event handler
-    handleWheel = (e) => {
-      e.preventDefault()
-      
-      const maxScroll = getMaxScroll()
-      targetScroll += e.deltaY
-      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
-      
-      startLoop()
-    }
+
+  // Detect mobile and only enable custom smooth scroll on non-mobile
+  isMobile = window.innerWidth <= 900
+
+  if (!isMobile) {
+    // Enable smooth scroll mode
+    document.documentElement.classList.add('smooth-scroll-active')
+
+    // Wait for content to render
+    setTimeout(() => {
+      updateBodyHeight()
+
+      // Wheel event handler
+      handleWheel = (e) => {
+        e.preventDefault()
+
+        const maxScroll = getMaxScroll()
+        targetScroll += e.deltaY
+        targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
+
+        startLoop()
+      }
     
     // Keyboard navigation
     handleKeyDown = (e) => {
@@ -280,11 +285,11 @@ onMounted(() => {
       startLoop()
     }
     
-    window.addEventListener('wheel', handleWheel, { passive: false })
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('touchstart', handleTouchStart, { passive: true })
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+      window.addEventListener('wheel', handleWheel, { passive: false })
+      window.addEventListener('keydown', handleKeyDown)
+      window.addEventListener('resize', handleResize)
+      window.addEventListener('touchstart', handleTouchStart, { passive: true })
+      window.addEventListener('touchmove', handleTouchMove, { passive: false })
     
     // Hero section should be visible immediately on page load
     visibleSections.value.add('hero')
@@ -293,9 +298,10 @@ onMounted(() => {
     checkSectionVisibility()
   }, 100)
   
-  // Update body height periodically to handle dynamic content
-  setTimeout(updateBodyHeight, 500)
-  setTimeout(updateBodyHeight, 1000)
+    // Update body height periodically to handle dynamic content
+    setTimeout(updateBodyHeight, 500)
+    setTimeout(updateBodyHeight, 1000)
+  }
 })
 
 onUnmounted(() => {
@@ -320,7 +326,9 @@ onUnmounted(() => {
   }
   
   // Reset styles
-  document.documentElement.classList.remove('smooth-scroll-active')
+  if (!isMobile) {
+    document.documentElement.classList.remove('smooth-scroll-active')
+  }
   document.body.style.height = ''
 })
 
@@ -639,6 +647,12 @@ html.smooth-scroll-active body {
 }
 
 .scroll-container {
+  position: static;
+  width: 100%;
+  background: #F0EEE9;
+}
+
+html.smooth-scroll-active .scroll-container {
   position: fixed;
   top: 0;
   left: 0;
