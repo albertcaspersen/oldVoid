@@ -194,8 +194,22 @@ onMounted(() => {
   // Detect mobile and only enable custom smooth scroll on non-mobile
   isMobile = window.innerWidth <= 900
 
-  if (!isMobile) {
-    // Enable smooth scroll mode
+  if (isMobile) {
+    // On mobile: use native scrolling, but make all sections visible immediately
+    visibleSections.value.add('hero')
+    visibleSections.value.add('intro')
+    visibleSections.value.add('intro-text')
+    visibleSections.value.add('team-title')
+    visibleSections.value.add('member-0')
+    visibleSections.value.add('member-1')
+    visibleSections.value.add('services-title')
+    for (let i = 0; i < 10; i++) {
+      visibleSections.value.add(`service-${i}`)
+    }
+    // Set wipe progress to 1 for team images on mobile
+    memberWipeProgress.value = [1, 1]
+  } else {
+    // Desktop: Enable smooth scroll mode
     document.documentElement.classList.add('smooth-scroll-active')
 
     // Wait for content to render
@@ -205,99 +219,94 @@ onMounted(() => {
       // Wheel event handler
       handleWheel = (e) => {
         e.preventDefault()
-
         const maxScroll = getMaxScroll()
         targetScroll += e.deltaY
         targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
+        startLoop()
+      }
 
+      // Keyboard navigation
+      handleKeyDown = (e) => {
+        const maxScroll = getMaxScroll()
+        let delta = 0
+
+        switch(e.key) {
+          case 'ArrowDown':
+            delta = 100
+            break
+          case 'ArrowUp':
+            delta = -100
+            break
+          case 'PageDown':
+            delta = window.innerHeight * 0.8
+            break
+          case 'PageUp':
+            delta = -window.innerHeight * 0.8
+            break
+          case 'Home':
+            targetScroll = 0
+            startLoop()
+            return
+          case 'End':
+            targetScroll = maxScroll
+            startLoop()
+            return
+          case ' ':
+            delta = e.shiftKey ? -window.innerHeight * 0.8 : window.innerHeight * 0.8
+            e.preventDefault()
+            break
+          default:
+            return
+        }
+
+        targetScroll += delta
+        targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
         startLoop()
       }
-    
-    // Keyboard navigation
-    handleKeyDown = (e) => {
-      const maxScroll = getMaxScroll()
-      let delta = 0
-      
-      switch(e.key) {
-        case 'ArrowDown':
-          delta = 100
-          break
-        case 'ArrowUp':
-          delta = -100
-          break
-        case 'PageDown':
-          delta = window.innerHeight * 0.8
-          break
-        case 'PageUp':
-          delta = -window.innerHeight * 0.8
-          break
-        case 'Home':
-          targetScroll = 0
-          startLoop()
-          return
-        case 'End':
+
+      // Resize handler
+      handleResize = () => {
+        windowHeight.value = window.innerHeight
+        updateBodyHeight()
+
+        // Clamp scroll position after resize
+        const maxScroll = getMaxScroll()
+        if (targetScroll > maxScroll) {
           targetScroll = maxScroll
+          currentScroll = Math.min(currentScroll, maxScroll)
           startLoop()
-          return
-        case ' ':
-          delta = e.shiftKey ? -window.innerHeight * 0.8 : window.innerHeight * 0.8
-          e.preventDefault()
-          break
-        default:
-          return
+        }
       }
-      
-      targetScroll += delta
-      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
-      startLoop()
-    }
-    
-    // Resize handler
-    handleResize = () => {
-      windowHeight.value = window.innerHeight
-      updateBodyHeight()
-      
-      // Clamp scroll position after resize
-      const maxScroll = getMaxScroll()
-      if (targetScroll > maxScroll) {
-        targetScroll = maxScroll
-        currentScroll = Math.min(currentScroll, maxScroll)
+
+      // Touch handlers for desktop touch devices
+      handleTouchStart = (e) => {
+        touchStartY = e.touches[0].clientY
+      }
+
+      handleTouchMove = (e) => {
+        e.preventDefault()
+        const touchY = e.touches[0].clientY
+        const delta = (touchStartY - touchY) * 1.5
+        touchStartY = touchY
+        const maxScroll = getMaxScroll()
+        targetScroll += delta
+        targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
         startLoop()
       }
-    }
-    
-    // Touch handlers for mobile
-    handleTouchStart = (e) => {
-      touchStartY = e.touches[0].clientY
-    }
-    
-    handleTouchMove = (e) => {
-      e.preventDefault()
-      
-      const touchY = e.touches[0].clientY
-      const delta = (touchStartY - touchY) * 1.5 // Multiply for better feel on mobile
-      touchStartY = touchY
-      
-      const maxScroll = getMaxScroll()
-      targetScroll += delta
-      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll))
-      
-      startLoop()
-    }
-    
+
       window.addEventListener('wheel', handleWheel, { passive: false })
       window.addEventListener('keydown', handleKeyDown)
       window.addEventListener('resize', handleResize)
       window.addEventListener('touchstart', handleTouchStart, { passive: true })
       window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    
-    // Hero section should be visible immediately on page load
-    visibleSections.value.add('hero')
-    
-    // Initial visibility check
-    checkSectionVisibility()
-  }, 100)
-  
+
+      // Hero section should be visible immediately on page load
+      visibleSections.value.add('hero')
+
+      // Initial visibility check
+      checkSectionVisibility()
+    }, 100)
+
     // Update body height periodically to handle dynamic content
     setTimeout(updateBodyHeight, 500)
     setTimeout(updateBodyHeight, 1000)
