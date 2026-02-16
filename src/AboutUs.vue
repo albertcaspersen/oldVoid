@@ -215,8 +215,9 @@ onMounted(() => {
           const viewportHeight = window.innerHeight
           
           // Animation range: from when element enters viewport to when it's well inside
-          const revealStart = viewportHeight * 0.9  // Start when element top is at 90% of viewport height
-          const revealEnd = viewportHeight * 0.3    // Fully revealed when at 30%
+          // Much expanded range for significantly slower animation on mobile
+          const revealStart = viewportHeight * 1.2  // Start when element is well below viewport
+          const revealEnd = viewportHeight * -0.1   // Fully revealed when slightly above top
           
           let targetProgress = 0
           
