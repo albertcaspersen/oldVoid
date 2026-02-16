@@ -5130,6 +5130,12 @@ onUnmounted(() => {
   max-width: 90vw;
 }
 
+@media (max-width: 768px) {
+  .landing-top-svg {
+    bottom: calc(var(--vh, 1vh) * 4); /* Dynamisk bottom baseret på viewport for at undgå browser UI */
+  }
+}
+
 .landing-hero {
   position: absolute;
   top: 0;
@@ -5461,7 +5467,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .scroll-text {
     font-size: 0.875rem;
-    max-width: 70%;
+    max-width: 60%;
     left: 1.5rem;
     bottom: calc(var(--vh, 1vh) * 8); /* Dynamisk bottom baseret på viewport */
   }
