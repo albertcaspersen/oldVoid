@@ -345,6 +345,9 @@ const handleTouchMove = (e) => {
   startLoop()
 }
 
+// Mobile scroll handler for native scrolling
+let handleMobileScroll = null
+
 onMounted(() => {
   // Decide whether to use custom smooth scrolling or native mobile scrolling
   isMobile = window.innerWidth <= 900
@@ -358,6 +361,13 @@ onMounted(() => {
       window.addEventListener('wheel', handleWheel, { passive: false })
       window.addEventListener('touchstart', handleTouchStart, { passive: true })
       window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    } else {
+      // Mobile: use native scroll but still update Three.js gallery
+      handleMobileScroll = () => {
+        currentScroll.value = window.scrollY
+        handleStickyAndThree()
+      }
+      window.addEventListener('scroll', handleMobileScroll, { passive: true })
     }
 
     // Resize handler (always update three renderer)
@@ -385,6 +395,8 @@ onUnmounted(() => {
     window.removeEventListener('touchstart', handleTouchStart)
     window.removeEventListener('touchmove', handleTouchMove)
     document.documentElement.classList.remove('smooth-scroll-active')
+  } else if (handleMobileScroll) {
+    window.removeEventListener('scroll', handleMobileScroll)
   }
 })
 </script>
@@ -648,6 +660,11 @@ html.smooth-scroll-active .scroll-container {
 
 /* Responsive */
 @media (max-width: 900px) {
+  .manual-sticky-wrapper {
+    position: sticky;
+    top: 0;
+  }
+  
   .case-info {
     left: 1.5rem;
     bottom: 75%;

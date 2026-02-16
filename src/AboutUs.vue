@@ -61,6 +61,8 @@ let handleResize = null
 let handleKeyDown = null
 let handleTouchStart = null
 let handleTouchMove = null
+let handleMobileScroll = null
+let mobileObserver = null
 let touchStartY = 0
 
 // Lerp function for smooth interpolation
@@ -195,18 +197,43 @@ onMounted(() => {
   isMobile = window.innerWidth <= 900
 
   if (isMobile) {
-    // On mobile: use native scrolling, but make all sections visible immediately
-    visibleSections.value.add('hero')
-    visibleSections.value.add('intro')
-    visibleSections.value.add('intro-text')
-    visibleSections.value.add('team-title')
-    visibleSections.value.add('member-0')
-    visibleSections.value.add('member-1')
-    visibleSections.value.add('services-title')
-    for (let i = 0; i < 10; i++) {
-      visibleSections.value.add(`service-${i}`)
+    // On mobile: use native scrolling with IntersectionObserver for animations
+    
+    // Native scroll listener for parallax and scrollY updates
+    handleMobileScroll = () => {
+      scrollY.value = window.scrollY
     }
-    // Set wipe progress to 1 for team images on mobile
+    window.addEventListener('scroll', handleMobileScroll, { passive: true })
+    
+    // IntersectionObserver for staggered reveal animations
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    }
+    
+    mobileObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.dataset.section
+          if (sectionId) {
+            visibleSections.value.add(sectionId)
+          }
+        }
+      })
+    }, observerOptions)
+    
+    // Observe all sections after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      document.querySelectorAll('[data-section]').forEach(el => {
+        mobileObserver.observe(el)
+      })
+      
+      // Hero is immediately visible
+      visibleSections.value.add('hero')
+    }, 100)
+    
+    // Set wipe progress to 1 for team images on mobile (no wipe animation)
     memberWipeProgress.value = [1, 1]
   } else {
     // Desktop: Enable smooth scroll mode
@@ -332,6 +359,12 @@ onUnmounted(() => {
   }
   if (handleTouchMove) {
     window.removeEventListener('touchmove', handleTouchMove)
+  }
+  if (handleMobileScroll) {
+    window.removeEventListener('scroll', handleMobileScroll)
+  }
+  if (mobileObserver) {
+    mobileObserver.disconnect()
   }
   
   // Reset styles
