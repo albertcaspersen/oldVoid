@@ -260,35 +260,38 @@ const lerp = (start, end, factor) => start + (end - start) * factor
 
 const handleStickyAndThree = () => {
   if (!gallerySectionRef.value || !stickyWrapper.value) return
-  const galleryTop = gallerySectionRef.value.offsetTop
+  
+  const galleryRect = gallerySectionRef.value.getBoundingClientRect()
   const galleryHeight = gallerySectionRef.value.offsetHeight
   const viewHeight = window.innerHeight
   
-  let stickyY = 0
-  if (currentScroll.value >= galleryTop) {
-    stickyY = Math.min(currentScroll.value - galleryTop, galleryHeight - viewHeight)
+  // On desktop: manually position the sticky wrapper with transform
+  // On mobile: CSS sticky handles the positioning, we just update Three.js
+  if (!isMobile) {
+    const galleryTop = gallerySectionRef.value.offsetTop
+    let stickyY = 0
+    if (currentScroll.value >= galleryTop) {
+      stickyY = Math.min(currentScroll.value - galleryTop, galleryHeight - viewHeight)
+    }
+    stickyWrapper.value.style.transform = `translate3d(0, ${stickyY}px, 0)`
   }
-  stickyWrapper.value.style.transform = `translate3d(0, ${stickyY}px, 0)`
 
-  const scrollDistance = currentScroll.value - galleryTop
+  // Calculate progress based on how far into the gallery section we've scrolled
+  // galleryRect.top is negative when we've scrolled past the top of the gallery
+  const scrolledIntoGallery = -galleryRect.top
   const totalScrollableHeight = galleryHeight - viewHeight
   
   // Tilføj en offset så første billede ikke vipper med det samme
-  // Vi vil have at brugeren skal scrolle ca. 5% af sticky-sektionen før første billede vipper
   const startOffset = totalScrollableHeight * 0.05
-  // Tilføj også en offset i slutningen så sidste billede ikke vipper helt ned med det samme
   const endOffset = totalScrollableHeight * 0.05
-  const adjustedScrollDistance = Math.max(0, scrollDistance - startOffset)
+  const adjustedScrollDistance = Math.max(0, scrolledIntoGallery - startOffset)
   const adjustedTotalHeight = totalScrollableHeight - startOffset - endOffset
   
   let progress = adjustedTotalHeight > 0 
     ? Math.max(0, Math.min(1, adjustedScrollDistance / adjustedTotalHeight))
     : 0
   threeTargetOffset = progress * (cases.length - 1)
-  // Når progress > 0 betyder det at brugeren er begyndt at scrolle gennem billederne
   userStartedGalleryScroll = progress > 0
-  
-  // Overskrifterne opdateres nu i animateThree() baseret på det aktive billede
 }
 
 const smoothScrollLoop = () => {
@@ -663,6 +666,7 @@ html.smooth-scroll-active .scroll-container {
   .manual-sticky-wrapper {
     position: sticky;
     top: 0;
+    will-change: auto;
   }
   
   .case-info {
