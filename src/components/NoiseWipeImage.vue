@@ -97,6 +97,12 @@ const fragmentShaderSource = `
   }
   
   void main() {
+    // If wipeProgress is 0 or very low, don't show anything
+    if (uWipeProgress < 0.01) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
+    }
+    
     vec4 texColor = texture2D(uTexture, vUv);
     
     // Skab gradient mask baseret kun på noise - ingen lineær gradient
@@ -107,7 +113,8 @@ const fragmentShaderSource = `
     float noise2 = fbm(gradientCoord * 1.5 + vec2(10.0));
     
     // Kombiner noise lag for organisk pattern (bevarer visuel kvalitet)
-    float gradientMask = (noise1 * 0.6 + noise2 * 0.4);
+    // Offset the mask slightly so it starts at a minimum value > 0
+    float gradientMask = (noise1 * 0.6 + noise2 * 0.4) * 0.9 + 0.05;
     
     // After Effects gradient wipe: sammenlign gradient mask med progress
     float reveal = step(gradientMask, uWipeProgress);
@@ -274,6 +281,10 @@ function render() {
   
   // Update canvas size if needed
   updateCanvasSize()
+  
+  // Enable alpha blending
+  gl.enable(gl.BLEND)
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
   
   // Clear canvas
   gl.clearColor(0, 0, 0, 0)
