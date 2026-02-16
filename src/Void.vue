@@ -5132,7 +5132,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .landing-top-svg {
-    bottom: calc(var(--vh, 1vh) * 4); /* Dynamisk bottom baseret på viewport for at undgå browser UI */
+    bottom: calc(var(--vh, 1vh) * 12); /* Større margin for at undgå browser UI på mobil */
   }
 }
 
