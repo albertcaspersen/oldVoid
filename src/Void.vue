@@ -11,6 +11,13 @@ import Nav from './Nav.vue'
 const router = useRouter()
 
 const containerRef = ref(null)
+
+// Mobile viewport height fix (Chrome browser UI)
+const updateVh = () => {
+  const vh = window.innerHeight * 0.01
+  document.documentElement.style.setProperty('--vh', `${vh}px`)
+}
+
 let scene, camera, renderer, plane, paperTexture, bumpTexture, gridHelper
 let animationId = null
 let handleResize = null
@@ -4667,8 +4674,17 @@ onMounted(() => {
     camera.aspect = window.innerWidth / window.innerHeight
     updateCameraFOV() // Opdater FOV baseret på skærmstørrelse
     renderer.setSize(window.innerWidth, window.innerHeight)
+    updateVh() // Opdater --vh for mobil viewport
   };
   window.addEventListener('resize', handleResize);
+  
+  // Lyt også til visualViewport resize (vigtigt for mobil browser UI)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateVh)
+  }
+  
+  // Initial --vh beregning
+  updateVh()
 });
 
 // Toggle info popup
@@ -4713,6 +4729,10 @@ onUnmounted(() => {
   
   if (handleResize) {
     window.removeEventListener('resize', handleResize)
+  }
+  // Fjern visualViewport listener
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', updateVh)
   }
   if (handleScroll) {
     window.removeEventListener('wheel', handleScroll)
@@ -5060,6 +5080,7 @@ onUnmounted(() => {
 .container {
   width: 100vw;
   height: 100vh;
+  height: calc(var(--vh, 1vh) * 100); /* Mobil viewport fix */
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -5442,7 +5463,7 @@ onUnmounted(() => {
     font-size: 0.875rem;
     max-width: 85%;
     left: 1.5rem;
-    bottom: 3rem;
+    bottom: calc(var(--vh, 1vh) * 8); /* Dynamisk bottom baseret på viewport */
   }
 }
 
