@@ -65,6 +65,7 @@ let handleTouchStart = null
 let handleTouchMove = null
 let handleMobileScroll = null
 let mobileObserver = null
+let mobileRafId = null
 let touchStartY = 0
 
 // Lerp function for smooth interpolation
@@ -203,6 +204,45 @@ onMounted(() => {
   if (isMobile) {
     // On mobile: use native scrolling with IntersectionObserver for animations
     
+    // Mobile animation frame for smooth wipe progress updates
+    
+    const updateMobileWipeProgress = () => {
+      team.forEach((member, index) => {
+        const memberWrapper = document.querySelector(`.member-image-wrapper.member-${index}`)
+        
+        if (memberWrapper) {
+          const rect = memberWrapper.getBoundingClientRect()
+          const viewportHeight = window.innerHeight
+          
+          // Animation range: from when element enters viewport to when it's well inside
+          const revealStart = viewportHeight * 0.9  // Start when element top is at 90% of viewport height
+          const revealEnd = viewportHeight * 0.3    // Fully revealed when at 30%
+          
+          let targetProgress = 0
+          
+          if (rect.top > revealStart) {
+            // Element is below the reveal start point - hidden
+            targetProgress = 0
+          } else if (rect.top < revealEnd) {
+            // Element is above the reveal end point - fully visible
+            targetProgress = 1
+          } else {
+            // Element is in the reveal range - interpolate
+            targetProgress = (revealStart - rect.top) / (revealStart - revealEnd)
+            targetProgress = Math.max(0, Math.min(1, targetProgress))
+          }
+          
+          // Smooth interpolation
+          memberWipeProgress.value[index] = lerp(memberWipeProgress.value[index], targetProgress, 0.15)
+        }
+      })
+      
+      mobileRafId = requestAnimationFrame(updateMobileWipeProgress)
+    }
+    
+    // Start mobile wipe progress animation loop
+    mobileRafId = requestAnimationFrame(updateMobileWipeProgress)
+    
     // Native scroll listener for parallax and scrollY updates
     handleMobileScroll = () => {
       scrollY.value = window.scrollY
@@ -236,9 +276,6 @@ onMounted(() => {
       // Hero is immediately visible
       visibleSections.value.add('hero')
     }, 100)
-    
-    // Set wipe progress to 1 for team images on mobile (no wipe animation)
-    memberWipeProgress.value = [1, 1]
   } else {
     // Desktop: Enable smooth scroll mode
     document.documentElement.classList.add('smooth-scroll-active')
@@ -366,6 +403,9 @@ onUnmounted(() => {
   }
   if (handleMobileScroll) {
     window.removeEventListener('scroll', handleMobileScroll)
+  }
+  if (mobileRafId) {
+    cancelAnimationFrame(mobileRafId)
   }
   if (mobileObserver) {
     mobileObserver.disconnect()
