@@ -366,6 +366,14 @@ onMounted(() => {
       window.addEventListener('touchmove', handleTouchMove, { passive: false })
     } else {
       // Mobile: use native scroll but still update Three.js gallery
+      // Ensure no transforms are applied that could break sticky positioning
+      if (stickyWrapper.value) {
+        stickyWrapper.value.style.transform = 'none'
+      }
+      if (scrollContainer.value) {
+        scrollContainer.value.style.transform = 'none'
+      }
+      
       handleMobileScroll = () => {
         currentScroll.value = window.scrollY
         handleStickyAndThree()
@@ -611,9 +619,32 @@ html.smooth-scroll-active .scroll-container {
 }
 
 /* GALLERI STYLES */
-.gallery-container { position: relative; width: 100%; }
+.gallery-container { 
+  position: relative; 
+  width: 100%; 
+}
 .manual-sticky-wrapper {
-  position: relative; height: 100vh; width: 100%; overflow: hidden; will-change: transform;
+  position: relative; 
+  height: 100vh; 
+  width: 100%; 
+  overflow: hidden; 
+  will-change: transform;
+}
+
+/* Mobile: use CSS sticky instead of JS transforms */
+@media (max-width: 900px) {
+  .gallery-container {
+    position: relative;
+    overflow: visible;
+  }
+  
+  .manual-sticky-wrapper {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    will-change: auto;
+    transform: none !important;
+  }
 }
 .gallery-canvas { position: absolute; inset: 0; z-index: 1; }
 .case-info { 
@@ -669,12 +700,6 @@ html.smooth-scroll-active .scroll-container {
 @media (max-width: 900px) {
   .hero-subtitle {
     font-size: clamp(0.675rem, 1.3vw, 1.05rem);
-  }
-  
-  .manual-sticky-wrapper {
-    position: sticky;
-    top: 0;
-    will-change: auto;
   }
   
   .case-info {
