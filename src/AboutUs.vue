@@ -731,6 +731,7 @@ html.smooth-scroll-active body {
   background: #F0EEE9;
   color: #1a1a1a;
   font-family: 'Boska', Georgia, serif;
+  overflow-x: hidden;
 }
 
 .scroll-container {
