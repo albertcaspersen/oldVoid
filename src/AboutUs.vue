@@ -483,7 +483,7 @@ onUnmounted(() => {
           <span class="title-line title-accent">us</span>
         </h1>
         <p class="hero-subtitle" :class="{ visible: visibleSections.has('hero') }">
-          
+          A Shared Passion for Exceptional Gardens
         </p>
       </div>
     </section>
