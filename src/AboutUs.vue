@@ -17,6 +17,8 @@ let rafId = null
 let isRunning = false
 const ease = 0.08 // Lower = more smooth/slow, Higher = more responsive
 let isMobile = false
+const isMobileRef = ref(false)
+const parallaxFactor = ref(-0.08)
 
 // Team members visibility for wipe animation
 const visibleSections = ref(new Set())
@@ -195,6 +197,8 @@ onMounted(() => {
 
   // Detect mobile and only enable custom smooth scroll on non-mobile
   isMobile = window.innerWidth <= 900
+  isMobileRef.value = isMobile
+  parallaxFactor.value = isMobile ? -0.03 : -0.08
 
   if (isMobile) {
     // On mobile: use native scrolling with IntersectionObserver for animations
@@ -572,7 +576,7 @@ onUnmounted(() => {
           >
             <div 
               class="member-image-parallax"
-              :style="{ transform: `translateY(${(scrollY - windowHeight * 1.5) * -0.08}px)` }"
+              :style="{ transform: `translateY(${(scrollY - windowHeight * 1.5) * parallaxFactor}px)` }"
             >
               <div class="member-image-container">
                 <NoiseWipeImage 
@@ -1245,6 +1249,15 @@ html.smooth-scroll-active .scroll-container {
   .member-image-wrapper.member-1 .member-image-container {
     max-width: 100%;
     margin-left: 0;
+  }
+  
+  /* Smaller images on mobile */
+  .member-image-wrapper.member-0 .member-image {
+    transform: scale(1.1);
+  }
+  
+  .member-image-wrapper.member-1 .member-image {
+    transform: scale(0.9);
   }
   
   .services-intro {

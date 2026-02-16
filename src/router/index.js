@@ -35,7 +35,19 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // On mobile, always scroll to top
+    const isMobile = window.innerWidth <= 768
+    if (isMobile) {
+      return { top: 0 }
+    }
+    // On desktop, use saved position if available (back/forward navigation)
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  }
 })
 
 export default router
