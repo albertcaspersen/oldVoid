@@ -136,7 +136,41 @@ const updateBodyHeight = () => {
 onMounted(() => {
   windowHeight.value = window.innerHeight
   
-  // Enable smooth scroll mode
+  const isMobile = window.innerWidth <= 900
+  
+  if (isMobile) {
+    // On mobile: use native scrolling with IntersectionObserver for animations
+    visibleSections.value.add('hero')
+    
+    // IntersectionObserver for staggered reveal animations
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    }
+    
+    const mobileObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.dataset.section
+          if (sectionId) {
+            visibleSections.value.add(sectionId)
+          }
+        }
+      })
+    }, observerOptions)
+    
+    // Observe all sections after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      document.querySelectorAll('[data-section]').forEach(el => {
+        mobileObserver.observe(el)
+      })
+    }, 100)
+    
+    return
+  }
+  
+  // Desktop: Enable smooth scroll mode
   document.documentElement.classList.add('smooth-scroll-active')
   
   // Wait for content to render
@@ -831,6 +865,10 @@ body {
 
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
+  
+  .hero-subtitle {
+    font-size: clamp(0.675rem, 1.3vw, 1.05rem);
+  }
   
   .grid-container {
     margin-left: 1.5rem;

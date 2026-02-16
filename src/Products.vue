@@ -27,6 +27,9 @@ let handleTouchMove = null
 let touchStartY = 0
 let touchStartedInScrollable = false
 
+// Mobile text collapse state
+const isCollectionTextExpanded = ref(false)
+
 // Products data
 const products = ref([
   {
@@ -462,6 +465,41 @@ const updateBodyHeight = () => {
 onMounted(() => {
   windowHeight.value = window.innerHeight
   
+  const isMobile = window.innerWidth <= 900
+  
+  if (isMobile) {
+    // On mobile: use native scrolling with IntersectionObserver for animations
+    visibleSections.value.add('hero')
+    
+    // IntersectionObserver for staggered reveal animations
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    }
+    
+    const mobileObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.dataset.section
+          if (sectionId) {
+            visibleSections.value.add(sectionId)
+          }
+        }
+      })
+    }, observerOptions)
+    
+    // Observe all sections after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      document.querySelectorAll('[data-section]').forEach(el => {
+        mobileObserver.observe(el)
+      })
+    }, 100)
+    
+    return
+  }
+  
+  // Desktop: Enable smooth scroll mode
   document.documentElement.classList.add('smooth-scroll-active')
   
   setTimeout(() => {
@@ -816,21 +854,35 @@ onUnmounted(() => {
           <p class="collection-text">
             We are proud to present our new Terracotta Collection. Each pot is carefully crafted by hand
             to ensure quality and durability, only using natural colour and sustainable materials in the
-            production. The result of this creative process, originating from the Italian Renaissance, makes
-            each terracotta pot unique and creates simple lines and harmony in any landscape.
+            production.
           </p>
-          <p class="collection-text">
-            As part of the Terracotta Collection, we have designed three pots that are exclusively
-            manufactured and distributed by us. The first one is Anfora Rigata Acqua, a tall water
-            fountain terracotta pot in the shape of a classic beehive that provides a calm water feature to any garden.
-          </p>
-          <p class="collection-text">
-            Next is Portavaso Felci, a small yet spacious terracotta pot that perfectly accommodates larger plants. This modest piece will light up the garden especially when paired together in groups of 2 or more.
-          </p>
-          <p class="collection-text">
-            Lastly, we are pleased to present Vaso Origini Love. This new terracotta pot is inspired by
-            classic jewellery design. This timeless piece is characterised by a simple sculpture encased by three bands creating a classic yet elegant structure.
-          </p>
+          <div class="mobile-text-collapsed" :class="{ expanded: isCollectionTextExpanded }">
+            <p class="collection-text">
+              The result of this creative process, originating from the Italian Renaissance, makes
+              each terracotta pot unique and creates simple lines and harmony in any landscape.
+            </p>
+            <p class="collection-text">
+              As part of the Terracotta Collection, we have designed three pots that are exclusively
+              manufactured and distributed by us. The first one is Anfora Rigata Acqua, a tall water
+              fountain terracotta pot in the shape of a classic beehive that provides a calm water feature to any garden.
+            </p>
+            <p class="collection-text">
+              Next is Portavaso Felci, a small yet spacious terracotta pot that perfectly accommodates larger plants. This modest piece will light up the garden especially when paired together in groups of 2 or more.
+            </p>
+            <p class="collection-text">
+              Lastly, we are pleased to present Vaso Origini Love. This new terracotta pot is inspired by
+              classic jewellery design. This timeless piece is characterised by a simple sculpture encased by three bands creating a classic yet elegant structure.
+            </p>
+          </div>
+          <button 
+            class="read-more-toggle"
+            @click="isCollectionTextExpanded = !isCollectionTextExpanded"
+          >
+            {{ isCollectionTextExpanded ? 'Read less' : 'Read more' }}
+            <svg class="chevron-icon" :class="{ open: isCollectionTextExpanded }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </div>
       </div>
       <div class="grid-container products-grid">
@@ -981,9 +1033,6 @@ html.smooth-scroll-active body {
   background: #F0EEE9;
   color: #1a1a1a;
   font-family: 'Boska', Georgia, serif;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
 .paper-overlay {
@@ -1054,6 +1103,7 @@ html.smooth-scroll-active body {
   line-height: 0.9;
   letter-spacing: -0.02em;
   margin: 0;
+  white-space: nowrap;
 }
 
 .title-line {
@@ -1100,6 +1150,12 @@ html.smooth-scroll-active body {
 }
 
 .scroll-container {
+  position: static;
+  width: 100%;
+  background: #F0EEE9;
+}
+
+html.smooth-scroll-active .scroll-container {
   position: fixed;
   top: 0;
   left: 0;
@@ -1124,7 +1180,7 @@ html.smooth-scroll-active body {
   grid-column: 5 / 9;
   opacity: 0;
   transform: translateY(60px);
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1s;
 }
 
 .collection-text-left.visible {
@@ -1173,6 +1229,15 @@ html.smooth-scroll-active body {
 
 .collection-text:last-child {
   margin-bottom: 0;
+}
+
+/* Mobile text collapse - hidden on desktop, but CSS backup */
+.mobile-text-collapsed {
+  display: block;
+}
+
+.read-more-toggle {
+  display: none;
 }
 
 .products-grid {
@@ -1372,6 +1437,10 @@ html.smooth-scroll-active body {
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
+  .hero-subtitle {
+    font-size: clamp(0.675rem, 1.3vw, 1.05rem);
+  }
+  
   .products-section {
     padding: clamp(3rem, 7vh, 5rem) 0;
   }
@@ -1380,8 +1449,57 @@ html.smooth-scroll-active body {
     grid-column: 1 / -1;
   }
   
+  .collection-text-scrollable {
+    max-height: none;
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  
   .collection-text {
     font-size: clamp(0.9rem, 2vw, 1.1rem);
+  }
+  
+  /* Mobile collapsible text */
+  .mobile-text-collapsed {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.4s ease;
+  }
+  
+  .mobile-text-collapsed.expanded {
+    max-height: 500px;
+    opacity: 1;
+  }
+  
+  .read-more-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    font-family: 'Boska', Georgia, serif;
+    font-size: clamp(0.85rem, 2vw, 1rem);
+    color: #4a6741;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    transition: opacity 0.3s ease;
+  }
+  
+  .read-more-toggle:hover {
+    opacity: 0.7;
+  }
+  
+  .read-more-toggle .chevron-icon {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s ease;
+  }
+  
+  .read-more-toggle .chevron-icon.open {
+    transform: rotate(180deg);
   }
   
   .grid-container {
@@ -1422,24 +1540,6 @@ html.smooth-scroll-active body {
 }
 
 @media (max-width: 768px) {
-  .hero {
-    height: 40vh;
-    padding-bottom: clamp(0.5rem, 1.5vh, 1rem);
-  }
-  
-  .hero-content {
-    padding: clamp(0.75rem, 1.5vh, 1.5rem);
-  }
-  
-  .hero-title {
-    font-size: clamp(2rem, 10vw, 4rem);
-  }
-  
-  .hero-subtitle {
-    font-size: clamp(0.75rem, 2vw, 1rem);
-    margin-top: clamp(1rem, 2vh, 1.5rem);
-  }
-  
   .products-section {
     padding: clamp(2.5rem, 5vh, 4rem) 0;
   }
@@ -1475,19 +1575,6 @@ html.smooth-scroll-active body {
 }
 
 @media (max-width: 480px) {
-  .hero {
-    height: 35vh;
-  }
-  
-  .hero-title {
-    font-size: clamp(1.75rem, 12vw, 3rem);
-  }
-  
-  .hero-subtitle {
-    font-size: clamp(0.7rem, 2.5vw, 0.9rem);
-    letter-spacing: 0.2em;
-  }
-  
   .products-section {
     padding: clamp(2rem, 4vh, 3rem) 0;
   }
@@ -1543,10 +1630,6 @@ html.smooth-scroll-active body {
 }
 
 @media (max-width: 360px) {
-  .hero {
-    height: 30vh;
-  }
-  
   .products-section {
     padding: clamp(1.5rem, 3vh, 2.5rem) 0;
   }

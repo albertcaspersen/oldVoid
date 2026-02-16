@@ -917,7 +917,7 @@ html.smooth-scroll-active .scroll-container {
 .intro-content {
   opacity: 0;
   transform: translateY(60px);
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1.5s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1.5s;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1s;
 }
 
 .intro-content.visible {
@@ -929,7 +929,7 @@ html.smooth-scroll-active .scroll-container {
   grid-column: 3 / -1;
   opacity: 0;
   transform: translateY(60px);
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1.5s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1.5s;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
 }
 
 .intro-text.visible {
@@ -1232,6 +1232,10 @@ html.smooth-scroll-active .scroll-container {
 
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
+  
+  .hero-subtitle {
+    font-size: clamp(0.675rem, 1.3vw, 1.05rem);
+  }
   
   .grid-container {
     margin-left: 1.5rem;

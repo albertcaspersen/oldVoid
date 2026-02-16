@@ -663,6 +663,10 @@ html.smooth-scroll-active .scroll-container {
 
 /* Responsive */
 @media (max-width: 900px) {
+  .hero-subtitle {
+    font-size: clamp(0.675rem, 1.3vw, 1.05rem);
+  }
+  
   .manual-sticky-wrapper {
     position: sticky;
     top: 0;
