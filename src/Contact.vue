@@ -875,6 +875,14 @@ body {
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   
+  .scroll-container {
+    position: relative;
+    top: auto;
+    left: auto;
+    will-change: auto;
+    transform: none !important;
+  }
+  
   .hero-subtitle {
     font-size: clamp(0.675rem, 1.3vw, 1.05rem);
   }
