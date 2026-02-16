@@ -5461,7 +5461,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .scroll-text {
     font-size: 0.875rem;
-    max-width: 85%;
+    max-width: 70%;
     left: 1.5rem;
     bottom: calc(var(--vh, 1vh) * 8); /* Dynamisk bottom baseret på viewport */
   }
