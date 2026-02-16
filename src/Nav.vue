@@ -140,11 +140,11 @@ watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, n
         <span></span>
       </div>
       <div class="burger-menu-items">
-        <a v-if="route.path !== '/'" href="#" @click.prevent="() => { goHome(); closeMenu(); }" class="menu-item">Home</a>
-        <a v-if="route.path !== '/about'" href="#" @click.prevent="() => { goToAbout(); closeMenu(); }" class="menu-item">About</a>
-        <a v-if="route.path !== '/cases'" href="#" @click.prevent="() => { goToCases(); closeMenu(); }" class="menu-item">Cases</a>
-        <a v-if="route.path !== '/products'" href="#" @click.prevent="() => { goToProducts(); closeMenu(); }" class="menu-item">Products</a>
-        <a v-if="route.path !== '/contact'" href="#" @click.prevent="() => { goToContact(); closeMenu(); }" class="menu-item">Contact</a>
+        <a v-if="route.path !== '/'" href="#" @click.prevent="() => { goHome(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Home</span></a>
+        <a v-if="route.path !== '/about'" href="#" @click.prevent="() => { goToAbout(); closeMenu(); }" class="menu-item"><span class="menu-item-label">About</span></a>
+        <a v-if="route.path !== '/cases'" href="#" @click.prevent="() => { goToCases(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Cases</span></a>
+        <a v-if="route.path !== '/products'" href="#" @click.prevent="() => { goToProducts(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Products</span></a>
+        <a v-if="route.path !== '/contact'" href="#" @click.prevent="() => { goToContact(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Contact</span></a>
       </div>
     </div>
   </nav>
@@ -280,20 +280,28 @@ watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, n
   text-align: right;
   position: relative;
 }
-
-.menu-item::after {
-  content: '';
-  position: absolute;
-  bottom: 0.5rem;
-  right: 0;
-  width: 0;
-  height: 2px;
-  background-color: #4a6741;
-  transition: width 0.3s ease;
+.menu-item-label {
+  display: inline-block;
+  position: relative;
 }
 
-.menu-item:hover::after {
-  width: 40%;
+.menu-item-label::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #4a6741;
+  transform-origin: right center; /* restore right-to-left growth */
+  transform: scaleX(0);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  bottom: -0.25rem;
+}
+
+.menu-item:hover .menu-item-label::after,
+.menu-item:focus .menu-item-label::after,
+.menu-item:focus-visible .menu-item-label::after {
+  transform: scaleX(1);
 }
 
 .menu-item:first-child {

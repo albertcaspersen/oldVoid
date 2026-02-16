@@ -960,7 +960,7 @@ onUnmounted(() => {
         </template>
       </div>
     </section>
-    
+
     <!-- Footer -->
     <Footer />
     </div>
@@ -979,6 +979,8 @@ html.smooth-scroll-active body {
   position: relative;
   min-height: 100vh;
   background: #F0EEE9;
+  color: #1a1a1a;
+  font-family: 'Boska', Georgia, serif;
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -1149,23 +1151,12 @@ html.smooth-scroll-active body {
     black 90%,
     transparent 100%
   );
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .collection-text-scrollable::-webkit-scrollbar {
-  width: 6px;
-}
-
-.collection-text-scrollable::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.collection-text-scrollable::-webkit-scrollbar-thumb {
-  background: rgba(26, 26, 26, 0.3);
-  border-radius: 3px;
-}
-
-.collection-text-scrollable::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 26, 26, 0.5);
+  display: none; /* Hide scrollbar for WebKit browsers */
 }
 
 .collection-text {

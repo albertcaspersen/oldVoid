@@ -43,8 +43,11 @@ const imageConfigs = [
   
   // landingTræ.png - Landing page tree image
   { path: '/pics/landingTræ.png', position: [-8, 3.5, 16], rotation: [0, 1, 0], size: 5, id: 'landingTræ', info: 'Landing tree.' },
+  
+  // slutbillede.png - placér ved path end (ignoreres ved landing-calc)
+  { path: '/pics/slutbillede.png', position: [8.5, 0.95, -23.5], rotation: [0, 0.0, -0.02], size: 4, id: 'slutbillede', ignoreForLanding: true, maxDistance: 12, info: 'Slutbillede ved path end.' },
 
- 
+  // tidligere entry (sketch1)
   { path: '/pics/image 22.png', position: [-6, 2.45, 10], rotation: [0, 1.3, -0.04], size: 8, id: 'sketch1', maxDistance: 25, info: 'Entrance sketch. Hand-drawn sketch of the property facade.' },
   
 
@@ -105,8 +108,14 @@ const imageConfigs = [
   // portFarve.png (foran portSketch)
   { path: '/pics/portFarve.png', position: [10, 2.15, -12.99], rotation: [0, -0.6, 0], size: 9, waitForProgress: 0.6, animationLength: 0.10, info: 'Port color.' },
 
+  // træ ved slutningen - placeret ved siden af portSketch
+  { path: '/pics/trævedslutningen.png', position: [3.2, 2.8, -21.5], rotation: [0, -0.2, 0], size: 1, id: 'trævedslutningen', info: 'Træ ved slutningen.', ignoreForLanding: true },
+
   // lillablomst.png
   { path: '/pics/lillablomst.png', position: [-7, 0.35, -9], rotation: [0, 0.2, 0], size: 0.5, info: 'Purple flower.' },
+
+  // New: træ og busk placed next to the purple flower
+  { path: '/pics/træogbusk.png', position: [-5.2, 3.2, -15.1], rotation: [0, 0.2, 0], size: 2.5, info: 'Træ og busk.', ignoreForLanding: true },
 
 ]
 let targetScrollProgress = 0
@@ -146,9 +155,52 @@ const bird3DRef = ref(null)
 // Toggle for at vise alle billeder eller bruge wipe effekt
 const showAllImages = ref(false) // Wipe effect enabled (OFF)
 
+// Midlertidig udvikler-mode (nyt): flag for manuel scrolling
+// Som standard deaktiveret så oplevelsen opfører sig som før.
+const manualScrollEnabled = ref(false)
+const manualScrollAllowed = ref(false) // når false, kan wheel ikke aktivere manual mode
+
+const enableManualScroll = () => {
+  manualScrollEnabled.value = true
+  isAutoScrolling.value = false
+  try {
+    document.documentElement.classList.remove('locked')
+    document.body.classList.remove('locked')
+    document.documentElement.style.overflow = 'auto'
+    document.body.style.overflow = 'auto'
+  } catch (e) {}
+  console.log('Manual scroll enabled — body lock removed')
+}
+
+const disableManualScroll = () => {
+  manualScrollEnabled.value = false
+  try {
+    document.documentElement.classList.add('locked')
+    document.body.classList.add('locked')
+    document.documentElement.style.overflow = ''
+    document.body.style.overflow = ''
+  } catch (e) {}
+  console.log('Manual scroll disabled — body lock restored')
+}
+
+// Toggle fast/manual scroll (developer temporary toggle)
+const toggleFastScroll = () => {
+  // Flip allowed flag so wheel can enable manual mode immediately
+  manualScrollAllowed.value = true
+  if (manualScrollEnabled.value) {
+    disableManualScroll()
+    manualScrollAllowed.value = false
+    console.log('Fast scroll: OFF')
+  } else {
+    enableManualScroll()
+    console.log('Fast scroll: ON')
+  }
+}
+
 // Toggle for atmosphere (nature audio) og Speak (speech audio)
 const atmosphereEnabled = ref(true) // Start med atmosphere tændt
 const speakEnabled = ref(true) // Start med speak tændt
+const SPEECH_PLAYBACK_RATE = 1.1 // Alle Speak-lydklip afspilles en smule hurtigere (1.0 = normal)
 
 // Warm-up / preloading state
 const isWarmedUp = ref(false) // Bliver true når alle initielle ressourcer er loadet
@@ -199,9 +251,9 @@ const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
 // Auto-scroll (Explore button) state
 const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
 let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
-const autoScrollSpeed = 0.00013 // Normal hastighed per frame
-const autoScrollSpeechSpeed = 0.00007 // Langsommere hastighed mens speak afspilles
-const autoScrollLandingSpeed = 0.0003 // Langsommere hastighed gennem landing-fasen (landing page → start path)
+const autoScrollSpeed = 0.00018 // Normal hastighed per frame
+const autoScrollSpeechSpeed = 0.0001 // Langsommere hastighed mens speak afspilles
+const autoScrollLandingSpeed = 0.0002 // Langsommere hastighed gennem landing-fasen (landing page → start path)
 const autoScrollTransitionSpeed = 0.0005 // Langsommere hastighed fra landing til første tekst
 
 // Ref for landing top SVG element (our landscape designs)
@@ -303,7 +355,18 @@ const scrollTexts = [
 let previousTextIndex = -1
 let fadeState = 'in' // 'in', 'out', eller 'pause'
 let fadeProgress = 0
-const textSectionRatio = 0.55 // Hvor meget af hver sektion teksten skal vises (0.55 = 55% tekst, 45% pause)
+const textSectionRatio = 0.55 // Default hvis ikke specificeret i array
+// TextSectionRatio for hver tekst (index 0-7) - styr hvor længe hver tekst vises
+const textSectionRatioOverrides = {
+  0: 0.55, // 'We begin with a dialogue about your dreams...'
+  1: 0.60, // 'Then we sketch your garden in detail...'
+  2: 0.55, // 'We add color to the sketch...'
+  3: 0.75, // 'We source every plant with care...'
+  4: 0.82, // 'The on-site craftsmanship begins...'
+  5: 0.75, // 'Each element is deliberately placed...'
+  6: 0.75, // 'Your dream garden takes shape...'
+  7: 0.55  // 'The result is a tailor-made garden...'
+}
 let isScrollingBackToStart = false
 
 // 3D Navigation at path end
@@ -312,13 +375,19 @@ let navUnderlines = [] // Array af hover underlines (grønne linjer under tekst)
 let navGroup = null // Gruppe der holder alle nav meshes
 let raycaster = null // For click detection
 let navVisible = false // Om navigation er synlig
+let navShowTimeout = null // timeout id for delayed showing of end-nav
 let hoveredNavMesh = null // Currently hovered nav mesh
+let use3DNav = false // Toggle to use legacy 3D nav meshes (we'll use 2D links instead)
 const navLinks = [
   { label: 'About', route: '/about' },
   { label: 'Cases', route: '/cases' },
   { label: 'Products', route: '/products' },
   { label: 'Contact', route: '/contact' }
 ]
+// Delay before starting the end-nav GSAP animation (seconds)
+const navAnimationDelay = 0.6
+// Delay before the end-nav overlay becomes visible (seconds)
+const navShowDelay = 0.6
 let handleNavClick = null // Click handler reference
 
 // Audio for nature sound
@@ -1121,6 +1190,9 @@ onMounted(() => {
   let imagesCenter = new THREE.Vector3(0, 0, 0)
   let imagesCount = 0
   imageConfigs.forEach(config => {
+    // Ignorer billeder markeret som `ignoreForLanding` så et enkelt billede langt ude
+    // i Z ikke skubber landing-kameraets position
+    if (config.ignoreForLanding) return
     imagesCenter.add(new THREE.Vector3(config.position[0], config.position[1], config.position[2]))
     imagesCount++
   })
@@ -1478,8 +1550,8 @@ onMounted(() => {
       '/pics/casesPics/tudorhouse.jpg'
     ]
     
-    // Total items: paper texture + pen model + brush model + scene billeder + case billeder + audio filer
-    warmUpTotalItems = 3 + imagesToPreload.length + caseImages.length + audioFiles.length
+    // Total items: paper texture + brush model + scene billeder + case billeder + audio filer (pen model ikke på landing)
+    warmUpTotalItems = 2 + imagesToPreload.length + caseImages.length + audioFiles.length
     warmUpLoadedItems = 0
     warmUpProgress.value = 0
     warmUpStatus.value = 'Initializing...'
@@ -1488,11 +1560,10 @@ onMounted(() => {
     await new Promise(resolve => setTimeout(resolve, 10))
     
     try {
-      // 1-3. Load papir tekstur + 3D models parallelt (ingen delays)
+      // 1-2. Load papir tekstur + brush model parallelt (pen model blyant.glb ikke på landing page)
       warmUpStatus.value = 'Loading textures & models...'
       const [loadedPaperTexture] = await Promise.all([
         loadTextureAsync('/texture/paper.png'),
-        loadPenModelAsync().then(() => updateWarmUpProgress('Pen model loaded')),
         loadBrushModelAsync().then(() => updateWarmUpProgress('Brush model loaded'))
       ])
       
@@ -1605,41 +1676,49 @@ onMounted(() => {
               speechAudio = result.audio
               speechAudio.loop = false
               speechAudio.volume = 1.0
+              speechAudio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech2':
               speech2Audio = result.audio
               speech2Audio.loop = false
               speech2Audio.volume = 1.0
+              speech2Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech3':
               speech3Audio = result.audio
               speech3Audio.loop = false
               speech3Audio.volume = 1.0
+              speech3Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech4':
               speech4Audio = result.audio
               speech4Audio.loop = false
               speech4Audio.volume = 1.0
+              speech4Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech5':
               speech5Audio = result.audio
               speech5Audio.loop = false
               speech5Audio.volume = 1.0
+              speech5Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech6':
               speech6Audio = result.audio
               speech6Audio.loop = false
               speech6Audio.volume = 1.0
+              speech6Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech7':
               speech7Audio = result.audio
               speech7Audio.loop = false
               speech7Audio.volume = 1.0
+              speech7Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
             case 'speech8':
               speech8Audio = result.audio
               speech8Audio.loop = false
               speech8Audio.volume = 1.0
+              speech8Audio.playbackRate = SPEECH_PLAYBACK_RATE
               break
           }
         }
@@ -1973,8 +2052,8 @@ onMounted(() => {
       const gltfLoader = new GLTFLoader()
       gltfLoader.load('/obj/brushing1.glb', (gltf) => {
         brushModel = gltf.scene
-        brushModel.position.set(-11, 0.08, -13)
-        brushModel.rotation.set(0.0, -2.5, 0.0)
+        brushModel.position.set(-7, 0.08, -13)
+        brushModel.rotation.set(0.0, -3, 0.0)
         brushModel.scale.set(2, 2, 2)
         
         // Bevar originale materialer og tilføj transparency for wipe-effekt
@@ -1989,10 +2068,23 @@ onMounted(() => {
                 material.transparent = true
                 material.opacity = 0 // Start usynlig
                 material.side = THREE.DoubleSide
+
+                // Mørkner farven lidt for at undgå udvasket look
+                if (material.color && material.color.isColor) {
+                  material.color.multiplyScalar(0.75)
+                }
+                if (material.emissive && material.emissive.isColor) {
+                  material.emissive.multiplyScalar(0.9)
+                }
+
                 material.needsUpdate = true
               }
             })
-            
+
+            // Undgå at Three.js culler (skjuler) mesh'en ved forkert bounding-sphere
+            // især relevant for skinned/animable meshes der kan have forkert bounds
+            child.frustumCulled = false
+
             child.castShadow = true
             child.receiveShadow = false
           }
@@ -3114,22 +3206,18 @@ onMounted(() => {
   // Scroll/wheel event handler
   handleScroll = (event) => {
     if (event) {
-      // LANDING PAGE: Forhindre bagud-scrolling på landing page
-      // event.deltaY > 0 betyder scroll nedad (fremad langs pathen)
-      // event.deltaY < 0 betyder scroll opad (bagud langs pathen)
-      const isScrollingBackward = event.deltaY < 0
-      
-      // Beregn hvad den nye totalScroll ville være
-      const newTotalScroll = totalScroll + (event.deltaY * 0.000008)
-      
-      // Tjek om vi prøver at scrolle bagud fra landing page
-      // Bloker kun hvis: 1) vi scroller bagud, 2) vi er allerede på landing (targetScrollProgress = 0 eller meget tæt på 0)
-      // Dette tillader at man kan scrolle tilbage til landing page, men stopper bagud-scrolling når man er der
-      const isAtLanding = targetScrollProgress <= 0.001 // Meget tæt på 0 (landing page)
-      if (isScrollingBackward && isAtLanding && newTotalScroll < 0) {
-        // Forhindre bagud-scrolling på landing page - returner tidligt uden at opdatere
+      // LANDING PAGE: Ingen scroll på landing – kun "Explore"-knappen må føre videre
+      const isAtLanding = targetScrollProgress < landingScrollThreshold
+      // Tillad manuel scrolling hvis udvikler-mode er slået til
+      if (isAtLanding && !manualScrollEnabled.value) {
         return
       }
+      
+      // event.deltaY > 0 = scroll nedad (fremad), event.deltaY < 0 = scroll opad (bagud)
+      // Use higher sensitivity when manual scroll is enabled so user can
+      // quickly traverse the entire experience with fewer wheel events.
+      const wheelSensitivity = manualScrollEnabled.value ? 0.0015 : 0.000008
+      const newTotalScroll = totalScroll + (event.deltaY * wheelSensitivity)
       
       // Tjek om vi prøver at scrolle fremad når vi er ved enden af pathen
       const isScrollingForward = event.deltaY > 0
@@ -3163,6 +3251,25 @@ onMounted(() => {
   // Tilføj wheel listener (mouse scroll)
   window.addEventListener('wheel', handleScroll, { passive: true })
   handleScroll() // Initial opdatering
+
+  // Hvis brugeren forsøger at scrolle med musen, aktiver manual scroll automatisk.
+  // Brug capture så denne handler kører FØR `handleScroll` og kan fjerne landing-blokken.
+  const onFirstUserWheel = (e) => {
+    // Hvis manual scroll ikke er tilladt eller allerede aktiveret, gør ingenting
+    if (manualScrollEnabled.value || !manualScrollAllowed.value) return
+    manualScrollEnabled.value = true
+    isAutoScrolling.value = false
+    try {
+      document.documentElement.classList.remove('locked')
+      document.body.classList.remove('locked')
+      document.documentElement.style.overflow = 'auto'
+      document.body.style.overflow = 'auto'
+    } catch (err) {}
+    console.log('Manual scroll enabled by user wheel')
+    // Fjern denne one-time listener
+    window.removeEventListener('wheel', onFirstUserWheel, { capture: true })
+  }
+  window.addEventListener('wheel', onFirstUserWheel, { passive: true, capture: true })
   
   // Mouse move handler for kamera bevægelse
   handleMouseMove = (event) => {
@@ -3189,7 +3296,7 @@ onMounted(() => {
     }
     
     // Check hover over 3D navigation
-    if (navVisible && raycaster && camera && navMeshes.length > 0) {
+    if (navVisible && use3DNav && raycaster && camera && navMeshes.length > 0) {
       const mouse = new THREE.Vector2()
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
@@ -3260,7 +3367,7 @@ onMounted(() => {
   
   // Click handler for 3D navigation
   handleNavClick = (event) => {
-    if (!navVisible || !raycaster || !camera || navMeshes.length === 0) return
+    if (!navVisible || !use3DNav || !raycaster || !camera || navMeshes.length === 0) return
     
     // Beregn normaliseret mus position
     const mouse = new THREE.Vector2()
@@ -3297,6 +3404,8 @@ onMounted(() => {
     }
   }
   window.addEventListener('click', handleNavClick)
+  // Fjern console-exposure af udvikler-funktioner for at undgå utilsigtet aktivering
+  try { window.enableManualScroll = undefined; window.disableManualScroll = undefined } catch(e) {}
   
   // Smooth interpolation funktion
   const lerp = (start, end, factor) => {
@@ -3339,9 +3448,11 @@ onMounted(() => {
       // Sketch1 (Entrance sketch) skal have højere wipeProgress tærskel
       const wipeThreshold = imageData.config.id === 'sketch1' ? 0.4 : 0.15
       const isVisible = imageData.imagePlane.visible && 
-                        imageData.wipeProgress > wipeThreshold && 
-                        distance < 10 &&
-                        !isInLandingPhase
+            imageData.wipeProgress > wipeThreshold && 
+            distance < 10 &&
+            !isInLandingPhase &&
+            // Exclude the final image (slutbillede) from showing an info button
+            imageData.config.id !== 'slutbillede'
       
       if (!isVisible) {
         newPositions.push({ x: 0, y: 0, visible: false })
@@ -3480,23 +3591,39 @@ onMounted(() => {
     const firstSectionSize = baseSectionSize * 1.5 // Tekst 1 får 1.5x størrelse
     const remainingSectionsSize = 1 - firstSectionSize // Resten af pladsen
     const otherSectionSize = remainingSectionsSize / (totalSections - 1) // Størrelse for resten
+    // Anden tekst/speech starter lidt tidligere for at mindske mellemrummet efter første tekst
+    const section1EarlyStart = 0.025
+    // "Each element is deliberately placed..." (index 5) starter lidt senere
+    const section5LateStart = 0.02
     
     // Find hvilken sektion vi er i
     let currentSection = 0
     let positionInSection = 0
     let clampedIndex = 0
     
-    if (normalizedProgress < firstSectionSize) {
+    if (normalizedProgress < firstSectionSize - section1EarlyStart) {
       // Vi er i første sektion (tekst 1)
       currentSection = 0
-      positionInSection = normalizedProgress / firstSectionSize
+      positionInSection = normalizedProgress / (firstSectionSize - section1EarlyStart)
       clampedIndex = 0
+    } else if (normalizedProgress < firstSectionSize) {
+      // Overlap: vis anden tekst/speech lidt tidligere (mindre mellemrum)
+      currentSection = 1
+      clampedIndex = 1
+      positionInSection = 0
     } else {
       // Vi er i en af de andre sektioner
       const progressAfterFirst = normalizedProgress - firstSectionSize
       currentSection = Math.floor(progressAfterFirst / otherSectionSize) + 1
       clampedIndex = Math.min(currentSection, scrollTexts.length - 1)
       positionInSection = (progressAfterFirst / otherSectionSize) % 1
+      
+      // Sektion 5 (index 5) starter lidt senere – hold i sektion 4 indtil vi har scrollet nok
+      if (currentSection === 5 && progressAfterFirst < 4 * otherSectionSize + section5LateStart) {
+        currentSection = 4
+        clampedIndex = 4
+        positionInSection = Math.min(1, (progressAfterFirst - 3 * otherSectionSize) / otherSectionSize)
+      }
       
       // Håndter edge case for sidste tekst
       if (clampedIndex === scrollTexts.length - 1 && positionInSection === 0 && normalizedProgress > 0.99) {
@@ -3506,7 +3633,8 @@ onMounted(() => {
     
     // I hver sektion: først tekst, så pause
     // textSectionRatio bestemmer hvor meget af sektionen teksten optager
-    const isInTextPart = positionInSection < textSectionRatio
+    const effectiveTextRatio = textSectionRatioOverrides[clampedIndex] ?? textSectionRatio
+    const isInTextPart = positionInSection < effectiveTextRatio
     
     if (isInTextPart && clampedIndex < scrollTexts.length) {
       // Vi er i tekst-delen af sektionen
@@ -3707,27 +3835,40 @@ onMounted(() => {
       const firstSectionSize = baseSectionSize * 1.5
       const remainingSectionsSize = 1 - firstSectionSize
       const otherSectionSize = remainingSectionsSize / (totalSections - 1)
+      const section1EarlyStart = 0.025
+      const section5LateStart = 0.02
       
       let currentSection = 0
       let positionInSection = 0
       let clampedIndex = 0
       
-      if (normalizedProgress < firstSectionSize) {
+      if (normalizedProgress < firstSectionSize - section1EarlyStart) {
         currentSection = 0
-        positionInSection = normalizedProgress / firstSectionSize
+        positionInSection = normalizedProgress / (firstSectionSize - section1EarlyStart)
         clampedIndex = 0
+      } else if (normalizedProgress < firstSectionSize) {
+        currentSection = 1
+        clampedIndex = 1
+        positionInSection = 0
       } else {
         const progressAfterFirst = normalizedProgress - firstSectionSize
         currentSection = Math.floor(progressAfterFirst / otherSectionSize) + 1
         clampedIndex = Math.min(currentSection, scrollTexts.length - 1)
         positionInSection = (progressAfterFirst / otherSectionSize) % 1
         
+        if (currentSection === 5 && progressAfterFirst < 4 * otherSectionSize + section5LateStart) {
+          currentSection = 4
+          clampedIndex = 4
+          positionInSection = Math.min(1, (progressAfterFirst - 3 * otherSectionSize) / otherSectionSize)
+        }
+        
         if (clampedIndex === scrollTexts.length - 1 && positionInSection === 0 && normalizedProgress > 0.99) {
           positionInSection = 1
         }
       }
       
-      const isInTextPart = positionInSection < textSectionRatio
+      const effectiveTextRatioAudio = textSectionRatioOverrides[clampedIndex] ?? textSectionRatio
+      const isInTextPart = positionInSection < effectiveTextRatioAudio
       
       // Detekter baglæns scrolling og reset speak-lydklip når vi scroller tilbage til deres trigger point
       if (previousClampedIndex !== -1 && clampedIndex < previousClampedIndex) {
@@ -3771,7 +3912,8 @@ onMounted(() => {
               // Vi er i pause-delen efter denne tekst - begynd at fade ud når vi nærmer os næste tekst
               // positionInSection går fra textSectionRatio til 1.0 i pause-delen
               // Start fade-out når vi er 80% gennem pause-delen (nærmer os næste tekst)
-              const pauseStart = textSectionRatio
+              const audioTextRatio = textSectionRatioOverrides[index] ?? textSectionRatio
+              const pauseStart = audioTextRatio
               const pauseRange = 1.0 - pauseStart
               const fadeOutStartInPause = pauseStart + (pauseRange * 0.8) // Start fade-out ved 80% gennem pause
               
@@ -3960,7 +4102,8 @@ onMounted(() => {
           const isHiddenOnLanding = hiddenOnLandingPage.includes(imageData.config.path) ||
                                      imageData.config.id === 'portSketch' ||
                                      imageData.config.id === 'hvideblomster' ||
-                                     imageData.config.id === 'sketch1'
+                                     imageData.config.id === 'sketch1' ||
+                                     imageData.config.ignoreForLanding === true
           
           // Vis alle billeder under landing fase - sikr at de er synlige
           // Men skjul specifikke billeder på landing page
@@ -4404,21 +4547,53 @@ onMounted(() => {
       const shouldShowNav = t >= navThreshold && !isInLandingPhase
       
       if (shouldShowNav && !navVisible) {
-        navGroup.visible = true
+        // Show the DOM for end-nav immediately but delay the GSAP entry animation
+        if (use3DNav) navGroup.visible = true
         navVisible = true
-      } else if (!shouldShowNav && navVisible) {
-        navGroup.visible = false
+
+        // Clear previous animation timeout if any
+        if (navShowTimeout) {
+          clearTimeout(navShowTimeout)
+          navShowTimeout = null
+        }
+
+        // Reset links to initial hidden state then animate after delay
+        try { gsap.set('.end-nav a', { opacity: 0, y: 60 }) } catch (e) {}
+        navShowTimeout = setTimeout(() => {
+          nextTick(() => {
+            try {
+              gsap.fromTo('.end-nav a',
+                { opacity: 0, y: 60 },
+                { opacity: 1, y: 0, duration: 0.9, stagger: 0.09, ease: 'power3.out', delay: navAnimationDelay }
+              )
+            } catch (e) {
+              console.warn('GSAP nav animation failed', e)
+            }
+          })
+          navShowTimeout = null
+        }, navShowDelay * 1000)
+      } else if (!shouldShowNav && (navVisible || navShowTimeout)) {
+        // Cancel pending animation and hide immediately
+        if (navShowTimeout) {
+          clearTimeout(navShowTimeout)
+          navShowTimeout = null
+        }
+        if (use3DNav) navGroup.visible = false
         navVisible = false
+        try { gsap.set('.end-nav a', { opacity: 0, y: 20 }) } catch (e) {}
       }
       
       // Fade opacity
       if (navVisible) {
         const fadeProgress = Math.min(1, (t - navThreshold) / 0.05) // Fade over de sidste 5%
-        navMeshes.forEach(mesh => {
-          mesh.material.opacity = fadeProgress * 0.95
-        })
+        if (use3DNav) {
+          navMeshes.forEach(mesh => {
+            mesh.material.opacity = fadeProgress * 0.95
+          })
+        }
         // Animér underlines width (scaleX) mod target med smooth interpolation (ligesom burger menu)
-        navUnderlines.forEach(underline => {
+        if (use3DNav) {
+          navUnderlines.forEach(underline => {
           const currentScaleX = underline.scale.x
           const targetScaleX = underline.userData.targetScaleX * fadeProgress
           // Smooth interpolation (0.2 = hurtigere, 0.1 = langsommere) - ligner burger menu transition
@@ -4426,7 +4601,8 @@ onMounted(() => {
           
           // Opdater opacity baseret på scale (fuld opacity når scale > 0)
           underline.material.opacity = fadeProgress * (targetScaleX > 0 ? 1 : 0)
-        })
+          })
+        }
       } else {
         navMeshes.forEach(mesh => {
           mesh.material.opacity = 0
@@ -4456,16 +4632,16 @@ onMounted(() => {
     
     // Nature audio starter nu kun når brugeren klikker på "CLICK FOR SOUND"
     // (fjernet auto-play for at kræve user interaction)
-  })
+  });
   
   // Håndter window resize
-  handleResize = () => {
+  const handleResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight
     updateCameraFOV() // Opdater FOV baseret på skærmstørrelse
     renderer.setSize(window.innerWidth, window.innerHeight)
-  }
-  window.addEventListener('resize', handleResize)
-})
+  };
+  window.addEventListener('resize', handleResize);
+});
 
 // Toggle info popup
 const toggleInfo = (index) => {
@@ -4485,6 +4661,12 @@ const closeInfo = () => {
 const saveScrollProgress = () => {
   localStorage.setItem('gardenScrollProgress', scrollProgress.toString())
   localStorage.setItem('gardenTotalScroll', totalScroll.toString())
+}
+
+// Navigate to route from 2D end-links
+const goToRoute = (route) => {
+  saveScrollProgress()
+  router.push(route)
 }
 
 
@@ -4518,6 +4700,11 @@ onUnmounted(() => {
   }
   if (handleNavClick) {
     window.removeEventListener('click', handleNavClick)
+  }
+  // Clear any pending nav show timeout
+  if (navShowTimeout) {
+    clearTimeout(navShowTimeout)
+    navShowTimeout = null
   }
   if (animationId) {
     cancelAnimationFrame(animationId)
@@ -4714,6 +4901,13 @@ onUnmounted(() => {
       </button>
     </div>
     
+    <!-- Fast scroll toggle (developer) -->
+    <div class="fast-scroll-toggle-wrapper">
+      <button class="fast-scroll-toggle" :class="{ active: manualScrollEnabled }" @click="toggleFastScroll" title="Toggle fast scroll">
+        {{ manualScrollEnabled ? 'FAST SCROLL ON' : 'FAST SCROLL OFF' }}
+      </button>
+    </div>
+    
     <!-- Landing page hero section - Cinematic entrance -->
     <!-- Vis kun landing page når hele 3D oplevelsen er loadet -->
     <div v-if="isWarmedUp" class="landing-hero" :class="{ 'animate-entrance': landingAnimationStarted }" :style="{ opacity: landingLogoOpacity, cursor: soundClicked ? 'default' : 'pointer' }" @click="handleSoundClick">
@@ -4810,6 +5004,18 @@ onUnmounted(() => {
       class="info-overlay"
       @click="closeInfo"
     ></div>
+
+    <!-- 2D end navigation links (replaces 3D nav meshes) -->
+    <div v-if="navVisible" class="end-nav">
+      <ul>
+        <li v-for="link in navLinks" :key="link.route">
+          <a href="" @click.prevent="goToRoute(link.route)">
+            <span class="end-nav-label">{{ link.label }}</span>
+            <span class="end-nav-underline" aria-hidden="true"></span>
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
   <!-- <Flock v-if="scene" ref="flockRef" :scene="scene" /> -->
   <Bird3D v-if="scene" ref="bird3DRef" :scene="scene" />
@@ -4936,6 +5142,82 @@ onUnmounted(() => {
   margin-top: 10vh;
 }
 
+/* 2D end navigation styling - centered, stacked, Boska font */
+.end-nav {
+  position: absolute;
+  inset: 0; /* full viewport overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  pointer-events: auto;
+  background: transparent;
+  /* Slight right offset to nudge links from center (increased further) */
+  transform: translateX(clamp(3rem, 16vw, 10rem));
+}
+.end-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 4vw, 3rem);
+  align-items: flex-end; /* Right-align items */
+  justify-content: center;
+}
+.end-nav li {
+  margin: 0;
+}
+.end-nav a {
+  font-family: 'Boska-Variable', 'Boska-Regular', serif;
+  font-weight: 300;
+  font-size: clamp(2.25rem, 9vw, 7rem);
+  color: #1a1a1a;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: normal; /* Remove extra spacing */
+  text-align: right; /* Right-align text */
+  display: block;
+  padding: 0.1rem 0.25rem;
+  line-height: 1;
+  pointer-events: auto;
+  opacity: 0; /* start hidden for fade-in */
+  transform: translateY(20px); /* slide in from below */
+}
+.end-nav a:hover {
+  text-decoration: underline;
+}
+
+/* Underline that animates out on hover (scaleX) */
+.end-nav-underline {
+  display: block;
+  width: 100%;
+  height: 5px;
+  background: #4a6741; /* same green as 3D underline */
+  transform-origin: right center; /* expand from right to left */
+  transform: scaleX(0);
+  transition: transform 0.54s cubic-bezier(0.22, 1, 0.36, 1);
+  margin-top: 0.35rem;
+}
+.end-nav a:hover .end-nav-underline,
+.end-nav a:focus .end-nav-underline,
+.end-nav a:focus-visible .end-nav-underline {
+  transform: scaleX(1);
+}
+
+.end-nav-label {
+  display: inline-block;
+}
+
+@media (max-width: 640px) {
+  .end-nav a {
+    font-size: clamp(1.6rem, 9vw, 4rem);
+    letter-spacing: normal;
+  }
+}
+
+/* Stagger handled by GSAP; CSS-only delays/keys removed to avoid conflict */
+
 .landing-hjemtegning-image {
   position: relative;
   max-width: 80vw;
@@ -5008,7 +5290,7 @@ onUnmounted(() => {
 
 .explore-button {
   position: fixed;
-  top: 50%;
+  top: calc(50% - 50px);
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1002;
@@ -5148,6 +5430,28 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 0.5rem;
   font-family: 'Boska-Regular', serif;
+}
+
+.fast-scroll-toggle-wrapper {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 1400;
+}
+.fast-scroll-toggle {
+  font-family: 'Boska-Regular', serif;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(26,26,26,0.12);
+  background: rgba(255,255,255,0.9);
+  color: #1a1a1a;
+  cursor: pointer;
+}
+.fast-scroll-toggle.active {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: rgba(0,0,0,0.2);
 }
 
 @media (max-width: 900px) {
