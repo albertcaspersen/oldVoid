@@ -275,11 +275,14 @@ const unlockSpeechAudioForMobile = () => {
   speechAudios.forEach((audio) => {
     if (audio) {
       audio.muted = true // Muted er pålideligt lydløs på iOS (i modsætning til volume=0)
+      // Nulstil til start før unlock
+      audio.currentTime = 0
       audio.play().then(() => {
         audio.pause()
         audio.currentTime = 0
         audio.muted = false
       }).catch(() => {
+        audio.currentTime = 0
         audio.muted = false
       })
     }
@@ -3690,6 +3693,8 @@ onMounted(() => {
         if (speechEntry && speechEntry.audio && !speechEntry.played() && speakEnabled.value) {
           speechEntry.setPlayed(true)
           speechEntry.audio.volume = 1.0
+          // Sørg for at starte fra begyndelsen (fix for mobil hvor audio kan være delvist afspillet fra unlock)
+          speechEntry.audio.currentTime = 0
           
           // Sænk auto-scroll fart mens speech afspilles
           if (isAutoScrolling.value) {
