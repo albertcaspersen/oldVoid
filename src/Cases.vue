@@ -517,10 +517,26 @@ html.smooth-scroll-active body {
   overflow-x: hidden;
 }
 
+/* Mobile: use overflow-clip-margin to avoid breaking sticky */
+@media (max-width: 900px) {
+  .cases-page {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+}
+
 .scroll-container {
   position: static;
   width: 100%;
   background: #F0EEE9;
+}
+
+@media (max-width: 900px) {
+  .scroll-container {
+    position: static;
+    transform: none !important;
+    overflow: visible;
+  }
 }
 
 html.smooth-scroll-active .scroll-container {
@@ -644,6 +660,7 @@ html.smooth-scroll-active .scroll-container {
     top: 0;
     will-change: auto;
     transform: none !important;
+    overflow: visible;
   }
 }
 .gallery-canvas { position: absolute; inset: 0; z-index: 1; }
