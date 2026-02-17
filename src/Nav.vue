@@ -116,7 +116,7 @@ watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, n
         opacity: 1,
         duration: 1.8,
         ease: 'expo.out',
-        delay: 0
+        delay: 1.4
       })
     }
   })

@@ -689,7 +689,7 @@ watch([isWarmedUp, landingTopSvgRef], ([warmedUp, svgEl]) => {
       scale: 1,
       duration: 1.8, // Slightly longer for more elegance
       ease: 'expo.out', // Very smooth, professional easing - starts fast, ends very smoothly
-      delay: 0 // Start immediately after preloader finishes
+      delay: 1.4 // Delay to let preloader finish completely
     })
   })
 }, { immediate: true, flush: 'post' })
@@ -5094,13 +5094,6 @@ onUnmounted(() => {
       </button>
     </div>
     
-    <!-- Fast scroll toggle (developer) -->
-    <div class="fast-scroll-toggle-wrapper">
-      <button class="fast-scroll-toggle" :class="{ active: manualScrollEnabled }" @click="toggleFastScroll" title="Toggle fast scroll">
-        {{ manualScrollEnabled ? 'FAST SCROLL ON' : 'FAST SCROLL OFF' }}
-      </button>
-    </div>
-    
     <!-- Landing page hero section - Cinematic entrance -->
     <!-- Vis kun landing page når hele 3D oplevelsen er loadet -->
     <div v-if="isWarmedUp" class="landing-hero" :class="{ 'animate-entrance': landingAnimationStarted }" :style="{ opacity: landingLogoOpacity, cursor: soundClicked ? 'default' : 'pointer' }" @click="handleSoundClick">
@@ -5634,28 +5627,6 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 0.5rem;
   font-family: 'Boska-Regular', serif;
-}
-
-.fast-scroll-toggle-wrapper {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  z-index: 1400;
-}
-.fast-scroll-toggle {
-  font-family: 'Boska-Regular', serif;
-  font-size: 0.85rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid rgba(26,26,26,0.12);
-  background: rgba(255,255,255,0.9);
-  color: #1a1a1a;
-  cursor: pointer;
-}
-.fast-scroll-toggle.active {
-  background: #1a1a1a;
-  color: #fff;
-  border-color: rgba(0,0,0,0.2);
 }
 
 @media (max-width: 900px) {
