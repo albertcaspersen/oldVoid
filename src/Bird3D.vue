@@ -26,105 +26,105 @@ const birdConfigs = [
   {
     // Fugl 1: Foran kameraet ved start
     centerX: 0, centerZ: 28, radiusX: 4, radiusZ: 3,
-    baseY: 1.8, yAmplitude: 0.4,
+    baseY: 3.0, yAmplitude: 0.3,
     speed: 0.0022, phase: 0,
     size: 0.22, flapOffset: 0
   },
   {
     // Fugl 2: Lidt til venstre tidligt på pathen
     centerX: -3, centerZ: 22, radiusX: 3, radiusZ: 4,
-    baseY: 2.0, yAmplitude: 0.5,
+    baseY: 2.8, yAmplitude: 0.35,
     speed: 0.0019, phase: Math.PI * 0.4,
     size: 0.20, flapOffset: 1.2
   },
   {
     // Fugl 3: Til højre tidligt
     centerX: 4, centerZ: 18, radiusX: 3, radiusZ: 3,
-    baseY: 1.5, yAmplitude: 0.3,
+    baseY: 3.2, yAmplitude: 0.25,
     speed: 0.0024, phase: Math.PI * 0.8,
     size: 0.18, flapOffset: 2.5
   },
   {
     // Fugl 4: Midt på pathen venstre
     centerX: -2, centerZ: 12, radiusX: 4, radiusZ: 4,
-    baseY: 2.2, yAmplitude: 0.5,
+    baseY: 2.9, yAmplitude: 0.35,
     speed: 0.0017, phase: Math.PI * 1.2,
     size: 0.21, flapOffset: 3.3
   },
   {
     // Fugl 5: Midt på pathen højre
     centerX: 3, centerZ: 8, radiusX: 3, radiusZ: 3,
-    baseY: 1.6, yAmplitude: 0.4,
+    baseY: 3.1, yAmplitude: 0.3,
     speed: 0.0021, phase: Math.PI * 0.2,
     size: 0.19, flapOffset: 4.1
   },
   {
     // Fugl 6: Central position
     centerX: 0, centerZ: 3, radiusX: 5, radiusZ: 4,
-    baseY: 2.0, yAmplitude: 0.6,
+    baseY: 2.7, yAmplitude: 0.4,
     speed: 0.0015, phase: Math.PI * 0.6,
     size: 0.23, flapOffset: 5.0
   },
   {
     // Fugl 7: Lige under midten
     centerX: -4, centerZ: -2, radiusX: 4, radiusZ: 3,
-    baseY: 1.8, yAmplitude: 0.4,
+    baseY: 3.3, yAmplitude: 0.3,
     speed: 0.0020, phase: Math.PI * 1.0,
     size: 0.17, flapOffset: 5.8
   },
   {
     // Fugl 8: Nedre del venstre
     centerX: 2, centerZ: -8, radiusX: 3, radiusZ: 4,
-    baseY: 2.1, yAmplitude: 0.5,
+    baseY: 2.8, yAmplitude: 0.35,
     speed: 0.0018, phase: Math.PI * 1.4,
     size: 0.20, flapOffset: 6.6
   },
   {
     // Fugl 9: Nedre del højre
     centerX: 5, centerZ: -12, radiusX: 4, radiusZ: 3,
-    baseY: 1.4, yAmplitude: 0.35,
+    baseY: 3.0, yAmplitude: 0.25,
     speed: 0.0023, phase: Math.PI * 0.3,
     size: 0.16, flapOffset: 7.4
   },
   {
     // Fugl 10: Mod slutningen venstre
     centerX: -3, centerZ: -16, radiusX: 3, radiusZ: 4,
-    baseY: 1.9, yAmplitude: 0.45,
+    baseY: 2.6, yAmplitude: 0.3,
     speed: 0.0016, phase: Math.PI * 1.7,
     size: 0.21, flapOffset: 8.2
   },
   {
     // Fugl 11: Mod slutningen central
     centerX: 1, centerZ: -20, radiusX: 4, radiusZ: 3,
-    baseY: 2.3, yAmplitude: 0.55,
+    baseY: 3.2, yAmplitude: 0.4,
     speed: 0.0019, phase: Math.PI * 0.9,
     size: 0.18, flapOffset: 9.0
   },
   {
     // Fugl 12: Ved slutningen
     centerX: -2, centerZ: -24, radiusX: 3, radiusZ: 3,
-    baseY: 1.7, yAmplitude: 0.4,
+    baseY: 2.9, yAmplitude: 0.3,
     speed: 0.0022, phase: Math.PI * 1.5,
     size: 0.22, flapOffset: 9.8
   },
   {
     // Fugl 13: Hurtig fugl der krydser hele pathen
     centerX: 0, centerZ: 5, radiusX: 6, radiusZ: 15,
-    baseY: 1.5, yAmplitude: 0.3,
+    baseY: 3.0, yAmplitude: 0.25,
     speed: 0.0012, phase: Math.PI * 0.1,
     size: 0.15, flapOffset: 10.6
   },
   {
     // Fugl 14: Langsom bane langs pathen
     centerX: -1, centerZ: -5, radiusX: 5, radiusZ: 12,
-    baseY: 2.4, yAmplitude: 0.6,
+    baseY: 3.4, yAmplitude: 0.4,
     speed: 0.0010, phase: Math.PI * 1.3,
     size: 0.24, flapOffset: 11.4
   },
   {
     // Fugl 15: Bred oval langs pathen
     centerX: 2, centerZ: 0, radiusX: 4, radiusZ: 18,
-    baseY: 1.6, yAmplitude: 0.35,
+    baseY: 3.1, yAmplitude: 0.25,
     speed: 0.0014, phase: Math.PI * 0.7,
     size: 0.19, flapOffset: 12.2
   }
