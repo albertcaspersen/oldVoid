@@ -42,6 +42,20 @@ const cameraStartThreshold = 0.1 // Hvor meget scroll der skal til før kameraet
 let landingCameraPosition = null // Kamera position når vi kigger ned
 let landingCameraLookAt = null // Hvor kameraet kigger hen i landing
 
+// Intro camera animation state (åbningsanimation)
+let isIntroCameraAnimating = false // True mens intro-kamera-animationen kører
+let introCameraStartPosition = null // Start position for intro animation (længere tilbage)
+let introCameraStartLookAt = null // Start lookAt for intro animation
+
+// Landing camera sway animation (kontinuerlig side-til-side bevægelse på landing page)
+let landingSwayTime = 0 // Tidstæller for sway animation
+let landingSwayIntensity = 0 // 0-1 hvor meget sway der påføres (fades ind under intro)
+const landingSwaySpeed = 0.4 // Hastighed af sway (lavere = langsommere)
+const landingSwayAmplitudeX = 1.2 // Amplitude i X-retning (side til side)
+const landingSwayAmplitudeY = 0.3 // Amplitude i Y-retning (op og ned)
+const landingSwayAmplitudeLookX = 0.4 // LookAt X amplitude
+const landingSwayAmplitudeLookY = 0.15 // LookAt Y amplitude
+
 // Array til at holde alle billeder med deres planes, shadows og progress
 let sceneImages = []
 
@@ -254,6 +268,7 @@ let targetLandingParallaxX = 0 // Target X for smooth interpolation
 let targetLandingParallaxY = 0 // Target Y for smooth interpolation
 const landingAnimationStarted = ref(false) // Track if landing animation has begun
 const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
+const exploreButtonVisible = ref(false) // Explore button visibility - set after intro camera animation
 
 // Auto-scroll (Explore button) state
 const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
@@ -1057,6 +1072,10 @@ onMounted(() => {
       isWarmedUp.value = true
       warmUpProgress.value = 100
       isReturningFromPage = true
+      // Aktivér sway med det samme hvis vi returnerer til landing page
+      if (parseFloat(savedScrollProgress) < landingScrollThreshold) {
+        landingSwayIntensity = 1
+      }
     } else {
       isReturningFromPage = false
     }
@@ -1229,18 +1248,42 @@ onMounted(() => {
     imagesCenter.z
   )
   
+  // Intro kamera start position (længere tilbage og højere op for åbningsanimation)
+  // Kameraet starter her og panorerer til landingCameraPosition når preloader forsvinder
+  introCameraStartPosition = new THREE.Vector3(
+    landingCameraPosition.x + -8, // Længere til højre
+    landingCameraPosition.y + 2, // Højere op
+    landingCameraPosition.z + 14 // Længere bagved
+  )
+  
+  // Intro lookAt - kig mod et punkt lidt anderledes end landing for mere dramatisk bevægelse
+  introCameraStartLookAt = new THREE.Vector3(
+    landingCameraLookAt.x + 1, // Lidt mere til højre
+    landingCameraLookAt.y - 6, // Lidt lavere
+    landingCameraLookAt.z - 5 // Længere væk
+  )
+  
   // Path look ahead position (for kamera retning)
   const pathLookAheadPoint = cameraPath.getPoint(0.1)
   
-  // Start kameraet i landing position (kigger ned)
-  camera.position.copy(landingCameraPosition)
-  camera.lookAt(landingCameraLookAt)
-  
-  // Initialiser smooth interpolation variabler med landing position
-  currentCameraPosition = landingCameraPosition.clone()
-  targetCameraPosition = landingCameraPosition.clone()
-  currentLookAt = landingCameraLookAt.clone()
-  targetLookAt = landingCameraLookAt.clone()
+  // Start kameraet i intro position (før åbningsanimationen)
+  // Hvis vi ikke returnerer fra en side, start fra intro position
+  if (!isReturningFromPage) {
+    camera.position.copy(introCameraStartPosition)
+    camera.lookAt(introCameraStartLookAt)
+    currentCameraPosition = introCameraStartPosition.clone()
+    targetCameraPosition = introCameraStartPosition.clone()
+    currentLookAt = introCameraStartLookAt.clone()
+    targetLookAt = introCameraStartLookAt.clone()
+  } else {
+    // Returnerer fra en side - start direkte i landing position
+    camera.position.copy(landingCameraPosition)
+    camera.lookAt(landingCameraLookAt)
+    currentCameraPosition = landingCameraPosition.clone()
+    targetCameraPosition = landingCameraPosition.clone()
+    currentLookAt = landingCameraLookAt.clone()
+    targetLookAt = landingCameraLookAt.clone()
+  }
   
   // Opret blyant-streg (bruger samme path som kameraet)
   const createPencilLine = () => {
@@ -1788,15 +1831,16 @@ onMounted(() => {
       
       // Hvis vi vender tilbage fra en anden side, behold den gemte position
       if (!isReturningFromPage) {
-        // Gendan kamera position til LANDING position (ikke bare original)
-        camera.position.copy(landingCameraPosition)
-        camera.lookAt(landingCameraLookAt)
+        // Hold kamera i INTRO position (starter åbningsanimation) - IKKE landing position
+        // Kameraet skal starte i intro-position og animere til landing når preloader forsvinder
+        camera.position.copy(introCameraStartPosition)
+        camera.lookAt(introCameraStartLookAt)
         
-        // Reset smooth interpolation variabler til landing
-        currentCameraPosition = landingCameraPosition.clone()
-        targetCameraPosition = landingCameraPosition.clone()
-        currentLookAt = landingCameraLookAt.clone()
-        targetLookAt = landingCameraLookAt.clone()
+        // Reset smooth interpolation variabler til intro position
+        currentCameraPosition = introCameraStartPosition.clone()
+        targetCameraPosition = introCameraStartPosition.clone()
+        currentLookAt = introCameraStartLookAt.clone()
+        targetLookAt = introCameraStartLookAt.clone()
         
         // Reset scroll state
         scrollProgress = 0
@@ -1869,6 +1913,62 @@ onMounted(() => {
         // Marker at hele 3D oplevelsen er loadet og klar
         isWarmedUp.value = true
         
+        // Start intro kamera animation (panorering fra intro position til landing position)
+        if (!isReturningFromPage && introCameraStartPosition && landingCameraPosition) {
+          isIntroCameraAnimating = true
+          landingSwayIntensity = 0 // Start uden sway
+          landingSwayTime = 0 // Reset sway time
+          
+          // Opret et objekt til at animere kamera position og sway intensity
+          const cameraAnimState = {
+            x: introCameraStartPosition.x,
+            y: introCameraStartPosition.y,
+            z: introCameraStartPosition.z,
+            lookX: introCameraStartLookAt.x,
+            lookY: introCameraStartLookAt.y,
+            lookZ: introCameraStartLookAt.z,
+            swayIntensity: 0 // Sway fades ind i slutningen af animationen
+          }
+          
+          // GSAP animation fra intro position til landing position
+          gsap.to(cameraAnimState, {
+            x: landingCameraPosition.x,
+            y: landingCameraPosition.y,
+            z: landingCameraPosition.z,
+            lookX: landingCameraLookAt.x,
+            lookY: landingCameraLookAt.y,
+            lookZ: landingCameraLookAt.z,
+            swayIntensity: 1, // Fuld sway ved animationens slutning
+            duration: 3.0, // Længere varighed for blødere animation
+            ease: 'power3.inOut', // Blød start og blød landing
+            delay: 0.2, // Kort pause efter preloader forsvinder
+            onUpdate: () => {
+              // Opdater sway intensity - fades ind fra 50% progress
+              const progress = cameraAnimState.swayIntensity
+              const swayFadeIn = Math.max(0, (progress - 0.5) * 2) // 0 ved 50%, 1 ved 100%
+              landingSwayIntensity = swayFadeIn
+              
+              // Sæt BASE positions (uden sway) - sway tilføjes i animate() loopet
+              // Dette sikrer konsistent sway-beregning både under og efter intro
+              currentCameraPosition.set(cameraAnimState.x, cameraAnimState.y, cameraAnimState.z)
+              targetCameraPosition.set(cameraAnimState.x, cameraAnimState.y, cameraAnimState.z)
+              currentLookAt.set(cameraAnimState.lookX, cameraAnimState.lookY, cameraAnimState.lookZ)
+              targetLookAt.set(cameraAnimState.lookX, cameraAnimState.lookY, cameraAnimState.lookZ)
+            },
+            onComplete: () => {
+              // Animation færdig - fortsæt sway animation
+              isIntroCameraAnimating = false
+              landingSwayIntensity = 1 // Fuld sway
+              // Sæt base positions - sway fortsætter i animate() loopet
+              currentCameraPosition.copy(landingCameraPosition)
+              targetCameraPosition.copy(landingCameraPosition)
+              currentLookAt.copy(landingCameraLookAt)
+              targetLookAt.copy(landingCameraLookAt)
+              console.log('🎬 Intro camera animation completed - sway continues smoothly')
+            }
+          })
+        }
+        
         // Mobil: Lås speech audio op ved første touch (iOS Safari kræver user gesture)
         const handleFirstTouch = () => {
           if (!soundClicked.value) {
@@ -1886,6 +1986,10 @@ onMounted(() => {
           // Sikr at landing logo er synligt når warm-up er færdig
           landingLogoOpacity.value = 1
           landingAnimationStarted.value = true
+          // Vis Explore knappen efter 2.2 sekunder
+          setTimeout(() => {
+            exploreButtonVisible.value = true
+          }, 2000)
         }
       } else {
         // Returning from another page - set camera to saved position
@@ -1942,6 +2046,11 @@ onMounted(() => {
           }
         }
         window.addEventListener('touchstart', handleFirstTouchReturn, { passive: true, once: true })
+        
+        // Vis Explore knappen med det samme når vi vender tilbage (ingen intro animation)
+        if (scrollProgress < landingScrollThreshold) {
+          exploreButtonVisible.value = true
+        }
         
         // isWarmedUp is already set to true earlier
       }
@@ -3209,8 +3318,11 @@ onMounted(() => {
     // Smooth interpolation af kamera position (lavere værdi = mere smooth)
     // Fortsæt med smooth interpolation hele vejen, også ved slutningen af pathen
     // Dette sikrer en glidende overgang uden "klik" effekt
-    currentCameraPosition.lerp(targetCameraPosition, 0.08)
-    currentLookAt.lerp(targetLookAt, 0.06)
+    // Skip lerp under intro camera animation - gsap styrer kameraet direkte
+    if (!isIntroCameraAnimating) {
+      currentCameraPosition.lerp(targetCameraPosition, 0.08)
+      currentLookAt.lerp(targetLookAt, 0.06)
+    }
     
     // Anvend rotation til lookAt punktet
     // Beregn retning fra kamera til lookAt punkt
@@ -3232,8 +3344,32 @@ onMounted(() => {
     mouseOffset.addScaledVector(right, -mouseX)
     mouseOffset.addScaledVector(up, -mouseY)
     
-    camera.position.copy(currentCameraPosition).add(mouseOffset)
-    camera.lookAt(currentLookAt)
+    // Landing page sway animation - kontinuerlig side-til-side bevægelse
+    // Kun aktiv når vi er på landing page og intro animation er færdig
+    const swayOffset = new THREE.Vector3()
+    const swayLookOffset = new THREE.Vector3()
+    
+    // Sway animation på landing page - virker BÅDE under intro animation og efter
+    if (scrollProgress < landingScrollThreshold && landingSwayIntensity > 0) {
+      // Beregn sway baseret på tid - smooth sinusbølger
+      const swayX = Math.sin(landingSwayTime) * landingSwayAmplitudeX * landingSwayIntensity
+      const swayY = Math.sin(landingSwayTime * 0.7 + 0.5) * landingSwayAmplitudeY * landingSwayIntensity
+      const swayLookX = Math.sin(landingSwayTime + 0.3) * landingSwayAmplitudeLookX * landingSwayIntensity
+      const swayLookY = Math.sin(landingSwayTime * 0.6 + 0.8) * landingSwayAmplitudeLookY * landingSwayIntensity
+      
+      // Anvend sway relativt til kamerets retning (højre/op vektorer)
+      swayOffset.addScaledVector(right, swayX)
+      swayOffset.addScaledVector(up, swayY)
+      swayLookOffset.addScaledVector(right, swayLookX)
+      swayLookOffset.addScaledVector(up, swayLookY)
+    } else if (scrollProgress >= landingScrollThreshold && landingSwayIntensity > 0) {
+      // Fade out sway når vi forlader landing page
+      landingSwayIntensity = Math.max(0, landingSwayIntensity - 0.02)
+    }
+    
+    camera.position.copy(currentCameraPosition).add(mouseOffset).add(swayOffset)
+    const finalLookAt = currentLookAt.clone().add(swayLookOffset)
+    camera.lookAt(finalLookAt)
   }
   
   // Scroll/wheel event handler
@@ -3764,6 +3900,9 @@ onMounted(() => {
     const currentTime = performance.now()
     const deltaTime = (currentTime - lastTime) / 1000 // Konverter til sekunder
     lastTime = currentTime
+    
+    // Opdater landing sway time (kontinuerlig animation)
+    landingSwayTime += deltaTime * landingSwaySpeed
     
     // Auto-scroll: Opdater targetScrollProgress automatisk
     if (isAutoScrolling.value) {
@@ -5008,7 +5147,7 @@ onUnmounted(() => {
     <button 
       v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
       class="explore-button"
-      :style="{ opacity: landingLogoOpacity }"
+      :class="{ 'animate-in': exploreButtonVisible }"
       @click="startAutoScroll"
     >
       Explore
@@ -5351,7 +5490,7 @@ onUnmounted(() => {
   position: fixed;
   top: calc(50% - 50px);
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateY(30px);
   z-index: 1002;
   font-family: 'Boska-Regular', serif;
   font-size: clamp(0.85rem, 1.1vw, 1.1rem);
@@ -5362,13 +5501,19 @@ onUnmounted(() => {
   border: 1px solid rgba(26, 26, 26, 0.3);
   padding: 0.85rem 2.8rem;
   cursor: pointer;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
   backdrop-filter: blur(2px);
+  opacity: 0;
 }
 
-.explore-button:active {
-  transform: translate(-50%, -50%) scale(0.97);
+.explore-button.animate-in {
+  transform: translate(-50%, -50%) translateY(0);
+  opacity: 1;
+}
+
+.explore-button.animate-in:active {
+  transform: translate(-50%, -50%) translateY(0) scale(0.97);
 }
 
 @keyframes scrollLineGrow {
