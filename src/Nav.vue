@@ -15,6 +15,11 @@ const props = defineProps({
   onNavigate: {
     type: Function,
     default: null
+  },
+  // Når true: intro (landing) er allerede afspillet — spring langsom intro-delay over
+  introPlayed: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -105,19 +110,24 @@ watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, n
         visibility: 'hidden'
       })
     } else {
-      // Landing page klar: start fra top og animer ned (som landing logo animerer op)
-      gsap.set(el, {
-        y: '-100vh',
-        opacity: 0,
-        visibility: 'visible'
-      })
-      gsap.to(el, {
-        y: 0,
-        opacity: 1,
-        duration: 1.8,
-        ease: 'expo.out',
-        delay: 1.4
-      })
+      // Hvis intro allerede er kørt, vis nav øjeblikkeligt uden lang delay
+      if (props.introPlayed) {
+        gsap.set(el, { y: 0, opacity: props.opacity ?? 1, visibility: 'visible' })
+      } else {
+        // Landing page klar: start fra top og animer ned (som landing logo animerer op)
+        gsap.set(el, {
+          y: '-100vh',
+          opacity: 0,
+          visibility: 'visible'
+        })
+        gsap.to(el, {
+          y: 0,
+          opacity: 1,
+          duration: 1.8,
+          ease: 'expo.out',
+          delay: 1.4
+        })
+      }
     }
   })
 }, { immediate: true, flush: 'post' })

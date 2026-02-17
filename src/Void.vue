@@ -1,5 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, onActivated, onDeactivated, ref, watch, nextTick, computed } from 'vue'
+
+// Give the component a name so <KeepAlive include="Void"> can match it
+defineOptions({ name: 'Void' })
 import { useRouter } from 'vue-router'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -20,6 +23,7 @@ const updateVh = () => {
 
 let scene, camera, renderer, plane, paperTexture, bumpTexture, gridHelper
 let animationId = null
+let wasNaturePlaying = false
 let handleResize = null
 let handleScroll = null // HMR: Gem reference til scroll handler
 let pencilLine = null
@@ -220,7 +224,8 @@ const toggleFastScroll = () => {
 
 // Toggle for atmosphere (nature audio) og Speak (speech audio)
 const atmosphereEnabled = ref(true) // Start med atmosphere tændt
-const speakEnabled = ref(true) // Start med speak tændt
+// Start med speak slået fra — vi ønsker ingen speech-lydklip
+const speakEnabled = ref(false)
 const SPEECH_PLAYBACK_RATE = 1.1 // Alle Speak-lydklip afspilles en smule hurtigere (1.0 = normal)
 
 // Warm-up / preloading state
@@ -229,6 +234,9 @@ const warmUpProgress = ref(0) // 0-100 progress for loading
 const warmUpStatus = ref('Initializing...') // Status text shown during loading
 const warmUpDistance = 40 // Afstand fra start position hvor billeder preloades (øget for at undgå lag)
 let isReturningFromPage = false // Track if we're returning from another page (skip preloader)
+
+// Session key: når intro er afspillet én gang i denne session, spring forloader/intro over
+const SESSION_INTRO_KEY = 'void_intro_played' 
 
 // Introduktion tekst med fade effekt
 const introOpacity = ref(0) // 0 = ikke synlig, 1 = fuldt synlig
@@ -268,15 +276,31 @@ let targetLandingParallaxX = 0 // Target X for smooth interpolation
 let targetLandingParallaxY = 0 // Target Y for smooth interpolation
 const landingAnimationStarted = ref(false) // Track if landing animation has begun
 const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
-const exploreButtonVisible = ref(false) // Explore button visibility - set after intro camera animation
+// Flag: har intro allerede kørt (bruges til at skippe langsomme delays efter første åbningsanimation)
+const introHasPlayed = ref(false)
+
+const exploreButtonVisible = ref(false) // Explore button visibility - toggles the animate-in class
+const exploreButtonMounted = ref(false) // Controls whether the button is mounted in the DOM
+// Opacity for explore button — simple ref updated directly from the animation loop
+const exploreOpacity = ref(0) // 0..1 (updated in animation loop)
+// How sensitive the explore-button opacity is to scroll on landing (higher = fades faster)
+const EXPLORE_OPACITY_SENSITIVITY = 3 // same sensitivity for fade-out and fade-in; opacity reacts immediately
+
+// Computed opacities to ensure numeric values in template bindings
+const scrollHintOpacity = computed(() => landingLogoOpacity.value)
+
+// Note: Explore button uses visibility flag directly; separate opacity logic removed
 
 // Auto-scroll (Explore button) state
 const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
 let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
-const autoScrollSpeed = 0.00018 // Normal hastighed per frame
-const autoScrollSpeechSpeed = 0.0001 // Langsommere hastighed mens speak afspilles
-const autoScrollLandingSpeed = 0.0002 // Langsommere hastighed gennem landing-fasen (landing page → start path)
-const autoScrollTransitionSpeed = 0.0005 // Langsommere hastighed fra landing til første tekst
+const autoScrollSpeed = 0.00001 // Normal hastighed per frame
+// Force en enkelt konstant hastighed for hele oplevelsen
+// Justeret ned for en lidt langsommere oplevelse
+const AUTO_SCROLL_CONSTANT_SPEED = 0.00016
+const autoScrollSpeechSpeed = autoScrollSpeed // fallback (kept for compatibility)
+const autoScrollLandingSpeed = autoScrollSpeed
+const autoScrollTransitionSpeed = autoScrollSpeed
 
 // Ref for landing top SVG element (our landscape designs)
 const landingTopSvgRef = ref(null)
@@ -291,6 +315,8 @@ const soundClicked = ref(false) // Track if user has clicked for sound
 // Lås speech audio op for mobil (iOS Safari kræver user gesture før play() virker)
 let speechAudioUnlocked = false
 const unlockSpeechAudioForMobile = () => {
+  // Hvis speech er deaktiveret, gør vi ingenting
+  if (!speakEnabled.value) return
   if (speechAudioUnlocked) return // Kun én gang
   speechAudioUnlocked = true
   const speechAudios = [speechAudio, speech2Audio, speech3Audio, speech4Audio, speech5Audio, speech6Audio, speech7Audio, speech8Audio]
@@ -1058,34 +1084,52 @@ onMounted(() => {
     }
     
     
+    // Session: hvis intro allerede er afspillet i denne browser‑session, så skip preloader/intro
+    const sessionIntroPlayed = sessionStorage.getItem(SESSION_INTRO_KEY)
+    if (sessionIntroPlayed) {
+      console.log('Session: intro previously played — skipping visible preloader/intro')
+      isWarmedUp.value = true
+      warmUpProgress.value = 100
+      introHasPlayed.value = true
+      isReturningFromPage = true
+
+      // Land på landing page (do not restore previous scroll)
+      scrollProgress = 0
+      targetScrollProgress = 0
+      totalScroll = 0
+      isInLandingPhase = true
+      headerLogoOpacity.value = 0
+      landingLogoOpacity.value = 1
+      landingSwayIntensity = 1
+    }
+
     // Check for saved scroll position (returning from another page)
     const savedScrollProgress = localStorage.getItem('gardenScrollProgress')
     const savedTotalScroll = localStorage.getItem('gardenTotalScroll')
     const hasReturnPosition = savedScrollProgress !== null && parseFloat(savedScrollProgress) > 0
-    
+
     // Clear saved position after reading
     localStorage.removeItem('gardenScrollProgress')
     localStorage.removeItem('gardenTotalScroll')
-    
-    // Skip preloader if returning from another page
+
+    // If returning from another page: skip preloader/intro but land ON landing page
+    // (vi BEHOLDER de preloaded ressourcer ved at cache komponenten med <KeepAlive>)
     if (hasReturnPosition) {
       isWarmedUp.value = true
       warmUpProgress.value = 100
       isReturningFromPage = true
-      // Aktivér sway med det samme hvis vi returnerer til landing page
-      if (parseFloat(savedScrollProgress) < landingScrollThreshold) {
-        landingSwayIntensity = 1
-      }
+      introHasPlayed.value = true // sørg for at nav vises straks
+
+      // Force landing state — DO NOT restore saved scrollProgress
+      scrollProgress = 0
+      targetScrollProgress = 0
+      totalScroll = 0
+      isInLandingPhase = true
+      headerLogoOpacity.value = 0
+      landingLogoOpacity.value = 1
+      landingSwayIntensity = 1
     } else {
       isReturningFromPage = false
-    }
-    
-    // Reset state variabler or restore from saved
-    if (hasReturnPosition) {
-      scrollProgress = parseFloat(savedScrollProgress)
-      targetScrollProgress = scrollProgress
-      totalScroll = parseFloat(savedTotalScroll) || 0
-    } else {
       scrollProgress = 0
       targetScrollProgress = 0
       totalScroll = 0
@@ -1964,7 +2008,10 @@ onMounted(() => {
               targetCameraPosition.copy(landingCameraPosition)
               currentLookAt.copy(landingCameraLookAt)
               targetLookAt.copy(landingCameraLookAt)
-              console.log('🎬 Intro camera animation completed - sway continues smoothly')
+              // Marker at intro er afspillet — bruges til at skippe lange delays senere
+              introHasPlayed.value = true
+              try { sessionStorage.setItem(SESSION_INTRO_KEY, '1') } catch(e) {}
+              console.log('🎬 Intro camera animation completed - sway continues smoothly (introHasPlayed=true)')
             }
           })
         }
@@ -1986,9 +2033,13 @@ onMounted(() => {
           // Sikr at landing logo er synligt når warm-up er færdig
           landingLogoOpacity.value = 1
           landingAnimationStarted.value = true
+          // Mount explore button immediately (so it can animate), then toggle visibility after delay
+          exploreButtonMounted.value = true
           // Vis Explore knappen efter 2.2 sekunder
           setTimeout(() => {
             exploreButtonVisible.value = true
+            // Ensure button is immediately visible (opacity 1) as part of intro entrance
+            exploreOpacity.value = 1
           }, 2000)
         }
       } else {
@@ -2049,7 +2100,10 @@ onMounted(() => {
         
         // Vis Explore knappen med det samme når vi vender tilbage (ingen intro animation)
         if (scrollProgress < landingScrollThreshold) {
+          exploreButtonMounted.value = true
           exploreButtonVisible.value = true
+          // Make sure opacity is set so the button is visible immediately
+          exploreOpacity.value = 1
         }
         
         // isWarmedUp is already set to true earlier
@@ -3375,17 +3429,29 @@ onMounted(() => {
   // Scroll/wheel event handler
   handleScroll = (event) => {
     if (event) {
-      // LANDING PAGE: Ingen scroll på landing – kun "Explore"-knappen må føre videre
+      // LANDING PAGE: Som standard blokeres native landing-scroll,
+      // men hvis brugeren scroller NED (deltaY>0) skal vi tillade wheel-only
+      // manuel kontrol så brugeren kan scrolle direkte fra landing.
       const isAtLanding = targetScrollProgress < landingScrollThreshold
       // Tillad manuel scrolling hvis udvikler-mode er slået til
       if (isAtLanding && !manualScrollEnabled.value) {
-        return
+        if (event && event.deltaY > 0) {
+          // Aktiver wheel-only manuel kontrol (beholder body overflow lock)
+          try {
+            // `enableManualWheelControl` er defineret senere i samme setup
+            if (typeof enableManualWheelControl === 'function') enableManualWheelControl()
+          } catch (err) {
+            console.warn('Kunne ikke aktivere manual wheel control:', err)
+          }
+        } else {
+          return
+        }
       }
       
       // event.deltaY > 0 = scroll nedad (fremad), event.deltaY < 0 = scroll opad (bagud)
-      // Use higher sensitivity when manual scroll is enabled so user can
-      // quickly traverse the entire experience with fewer wheel events.
-      const wheelSensitivity = manualScrollEnabled.value ? 0.0015 : 0.000008
+      // Use reduced sensitivity when manual scroll is enabled so user can
+      // control the experience precisely. Lowered again for finer control.
+      const wheelSensitivity = manualScrollEnabled.value ? 0.000009 : 0.000008
       const newTotalScroll = totalScroll + (event.deltaY * wheelSensitivity)
       
       // Tjek om vi prøver at scrolle fremad når vi er ved enden af pathen
@@ -3439,6 +3505,31 @@ onMounted(() => {
     window.removeEventListener('wheel', onFirstUserWheel, { capture: true })
   }
   window.addEventListener('wheel', onFirstUserWheel, { passive: true, capture: true })
+  // If the user scrolls while auto-scroll is active, interrupt auto-scroll and enable manual scrolling.
+  // Provide a wheel-only manual mode that DOES NOT enable native page scrolling/overflow.
+  const enableManualWheelControl = () => {
+    manualScrollEnabled.value = true
+    isAutoScrolling.value = false
+    manualScrollAllowed.value = false
+    console.log('Manual wheel control enabled (native page scroll still locked)')
+    // Ensure the main wheel handler is attached so wheel events control the experience
+    if (handleScroll) {
+      window.addEventListener('wheel', handleScroll, { passive: true })
+    }
+  }
+  const onInterruptAutoScroll = (e) => {
+    if (!isAutoScrolling.value) return
+    // Enable wheel-only manual control (do not change body overflow)
+    enableManualWheelControl()
+    // Stop auto-scroll state
+    stopAutoScroll()
+    console.log('Auto-scroll interrupted by user interaction')
+    // Remove these one-time interrupt listeners
+    window.removeEventListener('wheel', onInterruptAutoScroll, { capture: true })
+    window.removeEventListener('touchstart', onInterruptAutoScroll, { capture: true })
+  }
+  window.addEventListener('wheel', onInterruptAutoScroll, { passive: true, capture: true })
+  window.addEventListener('touchstart', onInterruptAutoScroll, { passive: true, capture: true })
   
   // Mouse move handler for kamera bevægelse
   handleMouseMove = (event) => {
@@ -3665,7 +3756,11 @@ onMounted(() => {
     const fadeInStart = landingScrollThreshold  // Start fade-in når vi forlader landing
     const fadeOutStart = 0.12  // Delay før teksten begynder at forsvinde (justeret for landing)
     const fadeOutEnd = 0.20    // Hvornår teksten er helt væk
-    
+
+    const clamp01 = (v) => Math.max(0, Math.min(1, v))
+    const isScrollingBack = previousScrollProgress > scrollProgress
+    const inIntroWindow = scrollProgress >= fadeInStart && scrollProgress <= fadeOutEnd
+
     // Hvis vi er i landing fase, skjul intro tekst
     if (scrollProgress < fadeInStart) {
       introOpacity.value = 0
@@ -3674,42 +3769,78 @@ onMounted(() => {
       introAnimationTime = 0
       return
     }
-    
+
     // Auto fade-in animation når vi forlader landing
     if (!introAnimationStarted || introAnimationTime < introAnimationDuration) {
       introAnimationStarted = true
       introAnimationTime += deltaTime
-      
+
       // Easing funktion for smooth animation
-      const t = Math.min(1, introAnimationTime / introAnimationDuration)
+      const t = clamp01(introAnimationTime / introAnimationDuration)
       const easeOut = 1 - Math.pow(1 - t, 3) // Cubic ease out
-      
+
       // Hvis brugeren har scrollet forbi fadeOutStart, brug scroll-baseret animation i stedet
       if (scrollProgress > fadeOutStart) {
-        // Switch til scroll-baseret fade-out
-        const scrollOutProgress = (scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart)
+        const scrollOutProgress = clamp01((scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart))
         introOpacity.value = Math.max(0, 1 - scrollOutProgress)
         introVisible.value = introOpacity.value > 0
+
+      // Når brugeren scroller tilbage: fade proportionelt mod landing (ikke snap til 1)
+      } else if (isScrollingBack && inIntroWindow) {
+        // Hvis vi er på vej mod landing: fade over [fadeInStart..fadeOutStart]
+        if (scrollProgress <= fadeInStart) {
+          introOpacity.value = 0
+        } else if (scrollProgress < fadeOutStart) {
+          // 0 ved fadeInStart -> 1 ved fadeOutStart
+          const backProgress = clamp01((scrollProgress - fadeInStart) / (fadeOutStart - fadeInStart))
+          introOpacity.value = backProgress
+        } else {
+          // Mellem fadeOutStart..fadeOutEnd: samme fade-out som ved fremad scroll
+          const progress = clamp01((scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart))
+          introOpacity.value = 1 - progress
+        }
+        introVisible.value = introOpacity.value > 0
+
       } else {
         // Fortsæt auto fade-in
         introOpacity.value = easeOut
         introVisible.value = true
       }
+
     } else {
-      // Auto animation er færdig - brug scroll til at fade ud
-      if (scrollProgress <= fadeOutStart) {
-        // Fuldt synlig
-        introOpacity.value = 1
-        introVisible.value = true
-      } else if (scrollProgress < fadeOutEnd) {
-        // Fade ud animation
-        const progress = (scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart)
-        introOpacity.value = 1 - progress
-        introVisible.value = true
-      } else {
-        // Helt væk
+      // Auto animation er færdig - brug scroll til at fade ud (kun indenfor intro-vinduet)
+      if (!inIntroWindow) {
         introOpacity.value = 0
         introVisible.value = false
+        return
+      }
+
+      if (isScrollingBack) {
+        // Når brugeren scroller tilbage indenfor intro-vinduet
+        if (scrollProgress <= fadeInStart) {
+          introOpacity.value = 0
+        } else if (scrollProgress < fadeOutStart) {
+          const backProgress = clamp01((scrollProgress - fadeInStart) / (fadeOutStart - fadeInStart))
+          introOpacity.value = backProgress
+        } else {
+          const progress = clamp01((scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart))
+          introOpacity.value = 1 - progress
+        }
+        introVisible.value = introOpacity.value > 0
+
+      } else {
+        // Standard fremad-scroll opførsel (som før)
+        if (scrollProgress <= fadeOutStart) {
+          introOpacity.value = 1
+          introVisible.value = true
+        } else if (scrollProgress < fadeOutEnd) {
+          const progress = (scrollProgress - fadeOutStart) / (fadeOutEnd - fadeOutStart)
+          introOpacity.value = 1 - progress
+          introVisible.value = true
+        } else {
+          introOpacity.value = 0
+          introVisible.value = false
+        }
       }
     }
   }
@@ -3904,26 +4035,12 @@ onMounted(() => {
     // Opdater landing sway time (kontinuerlig animation)
     landingSwayTime += deltaTime * landingSwaySpeed
     
-    // Auto-scroll: Opdater targetScrollProgress automatisk
+    // Auto-scroll: Opdater targetScrollProgress automatisk (konstant hastighed)
     if (isAutoScrolling.value) {
-      let speed = autoScrollSpeed
-      
-      // Hurtigere gennem landing-fasen (0 til 0.03)
-      if (targetScrollProgress < landingScrollThreshold) {
-        speed = autoScrollLandingSpeed
-      }
-      // Medium hastighed fra landing til første tekst (0.03 til 0.1)
-      else if (targetScrollProgress < cameraStartThreshold) {
-        speed = autoScrollTransitionSpeed
-      }
-      // Langsommere mens speak afspilles
-      else if (autoScrollSpeechPlaying) {
-        speed = autoScrollSpeechSpeed
-      }
-      
+      const speed = AUTO_SCROLL_CONSTANT_SPEED
       targetScrollProgress = Math.min(1, targetScrollProgress + speed)
       totalScroll = targetScrollProgress
-      
+
       // Stop auto-scroll når vi når enden
       if (targetScrollProgress >= 1) {
         stopAutoScroll()
@@ -3932,9 +4049,20 @@ onMounted(() => {
     
     // Smooth interpolation af scroll progress (lavere værdi = mere smooth)
     scrollProgress = lerp(scrollProgress, targetScrollProgress, 0.04)
-    
-    previousScrollProgress = scrollProgress
-    
+
+    // Opdater explore knappens opacity ud fra scroll — separat opførsel for frem/tilbage
+    // - Hold 0 under intro (exploreButtonVisible === false)
+    // - Brug `targetScrollProgress` for instant respons på bruger-wheelevents
+    // - Fade-out bruger EXPLORE_OPACITY_SENSITIVITY, fade-in bruger EXPLORE_OPACITY_FADE_IN_SENSITIVITY
+    if (!exploreButtonVisible.value) {
+      exploreOpacity.value = 0
+    } else {
+      const progressForOpacity = landingScrollThreshold > 0 ? Math.min(1, Math.max(0, targetScrollProgress / landingScrollThreshold)) : 0
+      // Use same sensitivity for both directions and update immediately for snappy response
+      const adjusted = Math.min(1, progressForOpacity * EXPLORE_OPACITY_SENSITIVITY)
+      exploreOpacity.value = 1 - adjusted
+    }
+
     // Smooth interpolation af scroll text position (følger blødt efter musen)
     if (scrollProgress < landingScrollThreshold) {
       scrollTextX.value = lerp(scrollTextX.value, targetScrollTextX, 0.05)
@@ -4802,6 +4930,9 @@ onMounted(() => {
     if (frameTime > 20) { // Over 20ms = under 50fps
       console.warn(`⚠️ Slow frame: ${frameTime.toFixed(1)}ms at scroll ${scrollProgress.toFixed(3)}, Camera Z: ${camera.position.z.toFixed(2)}`)
     }
+
+    // Track previous scroll progress for direction-sensitive fades (opdateres i slutningen af frame)
+    previousScrollProgress = scrollProgress
   }
   
   // Start warm-up og derefter animation loop
@@ -4857,6 +4988,83 @@ const goToRoute = (route) => {
   saveScrollProgress()
   router.push(route)
 }
+
+
+// KeepAlive: genaktivering (når brugeren navigerer tilbage til Home)
+onActivated(() => {
+  console.log('Void lifecycle: onActivated (KeepAlive)')
+  // Land direkte på landing page (brugeren forventer 'landing' når de kommer tilbage)
+  scrollProgress = 0
+  targetScrollProgress = 0
+  isInLandingPhase = true
+  headerLogoOpacity.value = 0
+  landingLogoOpacity.value = 1
+  introOpacity.value = 0
+  introVisible.value = false
+  introHasPlayed.value = true
+
+  // Re-attach events (de fjernes i onDeactivated)
+  if (handleResize) window.addEventListener('resize', handleResize)
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', updateVh)
+  if (handleScroll) window.addEventListener('wheel', handleScroll, { passive: true })
+  if (handleMouseMove) window.addEventListener('mousemove', handleMouseMove, { passive: true })
+  if (handleKeyDown) window.addEventListener('keydown', handleKeyDown)
+  if (handleKeyUp) window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('click', handleNavClick)
+
+  // Sørg for renderer DOM er i container igen
+  try {
+    if (containerRef.value && renderer && renderer.domElement && !containerRef.value.contains(renderer.domElement)) {
+      containerRef.value.appendChild(renderer.domElement)
+    }
+  } catch(e) {}
+
+  // Genstart animation loop hvis nødvendig
+  if (!animationId) animate()
+
+  // Genoptag audio hvis den spillede før deaktivering
+  try {
+    if (wasNaturePlaying && natureAudio && atmosphereEnabled.value) {
+      natureAudio.play().catch(() => {})
+    }
+  } catch(e) {}
+})
+
+
+// KeepAlive: deaktivering (når brugeren går til en underside)
+onDeactivated(() => {
+  console.log('Void lifecycle: onDeactivated (KeepAlive)')
+  // Pause animation frames (men dispose IKKE ressourcer)
+  if (animationId) {
+    cancelAnimationFrame(animationId)
+    animationId = null
+  }
+  if (displacementAnimationId) {
+    cancelAnimationFrame(displacementAnimationId)
+    displacementAnimationId = null
+  }
+
+  // Husk audio‑status så vi kan genoptage senere
+  wasNaturePlaying = !!(natureAudio && !natureAudio.paused)
+  if (natureAudio) try { natureAudio.pause() } catch(e) {}
+  ;[speechAudio, speech2Audio, speech3Audio, speech4Audio, speech5Audio, speech6Audio, speech7Audio, speech8Audio].forEach(a => { try { if (a) a.pause() } catch(e) {} })
+
+  // Fjern events for at undgå interaktion mens komponent er deaktiveret
+  if (handleResize) window.removeEventListener('resize', handleResize)
+  if (window.visualViewport) window.visualViewport.removeEventListener('resize', updateVh)
+  if (handleScroll) window.removeEventListener('wheel', handleScroll)
+  if (handleMouseMove) window.removeEventListener('mousemove', handleMouseMove)
+  if (handleKeyDown) window.removeEventListener('keydown', handleKeyDown)
+  if (handleKeyUp) window.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('click', handleNavClick)
+
+  // Remove renderer DOM from container to avoid blocking undersider
+  try {
+    if (containerRef.value && renderer && renderer.domElement && containerRef.value.contains(renderer.domElement)) {
+      containerRef.value.removeChild(renderer.domElement)
+    }
+  } catch(e) {}
+})
 
 
 onUnmounted(() => {
@@ -5072,7 +5280,7 @@ onUnmounted(() => {
       </div>
     </Transition>
     
-    <Nav :opacity="headerLogoOpacity" :is-warmed-up="isWarmedUp" :on-navigate="saveScrollProgress" />
+    <Nav :opacity="headerLogoOpacity" :is-warmed-up="isWarmedUp" :on-navigate="saveScrollProgress" :intro-played="introHasPlayed" />
     
     <!-- Audio controls - Atmosphere and Speak toggles -->
     <div class="audio-controls" :style="{ opacity: headerLogoOpacity }">
@@ -5083,14 +5291,6 @@ onUnmounted(() => {
         title="Toggle atmosphere audio"
       >
         Atmosphere: <strong>{{ atmosphereEnabled ? 'ON' : 'OFF' }}</strong>
-      </button>
-      <button 
-        class="audio-toggle" 
-        :class="{ 'active': speakEnabled }"
-        @click="speakEnabled = !speakEnabled"
-        title="Toggle speech audio"
-      >
-        Speak: <strong>{{ speakEnabled ? 'ON' : 'OFF' }}</strong>
       </button>
     </div>
     
@@ -5138,13 +5338,23 @@ onUnmounted(() => {
     
     <!-- Explore knap på landing page -->
     <button 
-      v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
+      v-if="isWarmedUp && exploreButtonMounted && scrollProgress < landingScrollThreshold"
       class="explore-button"
       :class="{ 'animate-in': exploreButtonVisible }"
+      :style="{ opacity: exploreOpacity }"
       @click="startAutoScroll"
     >
-      Explore
+      Explore Your Garden
     </button>
+
+    <!-- Mouse-following hint on landing: Scroll down -->
+    <div
+      v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
+      class="scroll-to-explore-text"
+      :style="{ left: (scrollTextX + 'px'), top: (scrollTextY + 'px'), opacity: scrollHintOpacity }"
+    >
+      Scroll down
+    </div>
     
     <!-- Introduktion tekst med fade effekt -->
     <div 
@@ -5501,8 +5711,8 @@ onUnmounted(() => {
 }
 
 .explore-button.animate-in {
+  /* transform handles the entrance movement; opacity is controlled by `exploreOpacity` (inline style) */
   transform: translate(-50%, -50%) translateY(0);
-  opacity: 1;
 }
 
 .explore-button.animate-in:active {

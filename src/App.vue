@@ -2,7 +2,9 @@
 </script>
 
 <template>
-  <router-view />
+  <KeepAlive include="Void">
+    <router-view />
+  </KeepAlive>
 </template>
 
 <style>
