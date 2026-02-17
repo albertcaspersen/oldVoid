@@ -1475,8 +1475,8 @@ onMounted(() => {
   renderer.setSize(screenWidth, screenHeight)
   renderer.setPixelRatio(maxPixelRatio)
   renderer.shadowMap.enabled = true // Aktivér skygger
-  // PERFORMANCE: Brug hurtigere shadow map type på store skærme
-  renderer.shadowMap.type = isLargeScreen ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap
+  // PERFORMANCE: Brug altid hurtigere shadow map type
+  renderer.shadowMap.type = THREE.PCFShadowMap
   containerRef.value.appendChild(renderer.domElement)
   
   console.log(`[PERFORMANCE] Screen: ${screenWidth}x${screenHeight}, PixelRatio: ${maxPixelRatio.toFixed(2)}, Antialiasing: ${useAntialiasing}, LargeScreen: ${isLargeScreen}`)
@@ -2913,22 +2913,22 @@ onMounted(() => {
   // NOTE: Pen model loades nu af warm-up systemet (loadPenModelAsync)
   
   // Tilføj lys (meget stærkt hvidt lys)
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.5) // Øget intensitet
+  const ambientLight = new THREE.AmbientLight(0xF0EEE9, 1.5) // Øget intensitet
   scene.add(ambientLight)
   
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5) // Øget intensitet
+  const directionalLight = new THREE.DirectionalLight(0xF0EEE9, 1.5) // Øget intensitet
   directionalLight.position.set(10, 10, 5)
   directionalLight.castShadow = true // Kast skygger
-  // PERFORMANCE: Reducer shadow map størrelse på store skærme (1024 vs 2048 = 4x færre pixels)
-  const shadowMapSize = isLargeScreen ? 1024 : (isMediumScreen ? 1536 : 2048)
+  // PERFORMANCE: Balanceret shadow map størrelse (1024 for god kvalitet)
+  const shadowMapSize = 1024
   directionalLight.shadow.mapSize.width = shadowMapSize
   directionalLight.shadow.mapSize.height = shadowMapSize
   directionalLight.shadow.camera.near = 0.5
-  directionalLight.shadow.camera.far = 50
-  directionalLight.shadow.camera.left = -25
-  directionalLight.shadow.camera.right = 25
-  directionalLight.shadow.camera.top = 25
-  directionalLight.shadow.camera.bottom = -25
+  directionalLight.shadow.camera.far = 80 // Øget fra 50 til at dække hele scenen
+  directionalLight.shadow.camera.left = -40 // Udvidet for at dække landing view
+  directionalLight.shadow.camera.right = 40
+  directionalLight.shadow.camera.top = 40
+  directionalLight.shadow.camera.bottom = -40
   directionalLight.shadow.bias = -0.0001 // Reducer shadow acne
   directionalLight.shadow.radius = 2 // Skarpere skygger for bedre synlighed (lavere værdi = skarpere)
   directionalLight.shadow.normalBias = 0.02 // Reducer shadow acne yderligere
@@ -4052,22 +4052,28 @@ onMounted(() => {
       scene.fog = new THREE.FogExp2(0xF0EEE9, 0.13)
     }
     
-    // Belysning - konstant gennem hele oplevelsen
+    // Belysning - justeret baseret på landing fase for bedre skygger
     if (ambientLightRef) {
-      // Konstant ambient light intensity gennem hele oplevelsen
-      ambientLightRef.intensity = 1.5
+      // Lidt lavere ambient light på landing page = mere synlige skygger
+      const targetAmbient = isInLandingPhase ? 0.8 : 1.5
+      ambientLightRef.intensity = THREE.MathUtils.lerp(ambientLightRef.intensity, targetAmbient, 0.05)
     }
     
-    // Shadow settings - konstant gennem hele oplevelsen
+    // Shadow settings - konstant lys-position gennem hele oplevelsen
     if (directionalLightRef) {
+      // Stærkere directional light på landing for mere markante skygger
+      const targetIntensity = isInLandingPhase ? 2.5 : 1.5
+      directionalLightRef.intensity = THREE.MathUtils.lerp(directionalLightRef.intensity, targetIntensity, 0.05)
+      
       // Konstant shadow radius gennem hele oplevelsen
       directionalLightRef.shadow.radius = 2
       
-      // Konstant shadow camera område gennem hele oplevelsen
-      directionalLightRef.shadow.camera.left = -30
-      directionalLightRef.shadow.camera.right = 30
-      directionalLightRef.shadow.camera.top = 30
-      directionalLightRef.shadow.camera.bottom = -30
+      // Udvidet shadow camera område for at dække landing view
+      directionalLightRef.shadow.camera.left = -40
+      directionalLightRef.shadow.camera.right = 40
+      directionalLightRef.shadow.camera.top = 40
+      directionalLightRef.shadow.camera.bottom = -40
+      directionalLightRef.shadow.camera.far = 80
       directionalLightRef.shadow.camera.updateProjectionMatrix()
       
       // Konstant shadow bias gennem hele oplevelsen
