@@ -294,13 +294,18 @@ const scrollHintOpacity = computed(() => landingLogoOpacity.value)
 // Auto-scroll (Explore button) state
 const isAutoScrolling = ref(false) // Om auto-scroll er aktiv
 let autoScrollSpeechPlaying = false // Om en speech audio afspilles lige nu (sænk farten)
-const autoScrollSpeed = 0.00001 // Normal hastighed per frame
-// Force en enkelt konstant hastighed for hele oplevelsen
-// Justeret ned for en lidt langsommere oplevelse
-const AUTO_SCROLL_CONSTANT_SPEED = 0.00016
-const autoScrollSpeechSpeed = autoScrollSpeed // fallback (kept for compatibility)
-const autoScrollLandingSpeed = autoScrollSpeed
-const autoScrollTransitionSpeed = autoScrollSpeed
+// Auto-scroll baseline: progress PER SECOND (framerate-uafhængig).
+// Skaleres med skærmbredden så større displays får højere visuel hastighed.
+// Der er også en lille kompensation for mindre/laptop-skærme så de ikke føles langsommere
+// Øget globalt så oplevelsen føles hurtigere på alle enheder.
+const AUTO_SCROLL_BASE_PER_SEC = 0.025    // hurtigere baseline (tidligere 0.0132)
+const AUTO_SCROLL_SCREEN_BASE = 1600     // lavere baseline => større skærme skaleres mere
+const AUTO_SCROLL_MAX_SCREEN_SCALE = 1.35 // max skaleringsfactor for meget store displays
+const AUTO_SCROLL_SMALL_SCREEN_BOOST_MAX = 1.25 // større small-screen boost
+const AUTO_SCROLL_SMALL_SCREEN_MIN_WIDTH = 1280 // width where small-screen boost når max
+const autoScrollSpeechSpeed = AUTO_SCROLL_BASE_PER_SEC // per-second fallback when speech is playing
+const autoScrollLandingSpeed = AUTO_SCROLL_BASE_PER_SEC
+const autoScrollTransitionSpeed = AUTO_SCROLL_BASE_PER_SEC
 
 // Ref for landing top SVG element (our landscape designs)
 const landingTopSvgRef = ref(null)
@@ -4035,20 +4040,36 @@ onMounted(() => {
     // Opdater landing sway time (kontinuerlig animation)
     landingSwayTime += deltaTime * landingSwaySpeed
     
-    // Auto-scroll: Opdater targetScrollProgress automatisk (konstant hastighed)
+    // Auto-scroll: Opdater targetScrollProgress automatisk med framerate‑uafhængig hastighed (per-second)
     if (isAutoScrolling.value) {
-      const speed = AUTO_SCROLL_CONSTANT_SPEED
-      targetScrollProgress = Math.min(1, targetScrollProgress + speed)
+      // Screen scaling: larger displays speed up, but cap and soften the curve so
+      // 27"+ screens don't become excessively fast.
+      const w = window.innerWidth
+      let screenScale = 1
+      if (w >= AUTO_SCROLL_SCREEN_BASE) {
+        // soften large-screen scaling with sqrt and clamp to a reasonable max
+        const raw = w / AUTO_SCROLL_SCREEN_BASE
+        screenScale = Math.min(AUTO_SCROLL_MAX_SCREEN_SCALE, Math.sqrt(raw))
+      } else {
+        // Interpolér en lille boost fra 1 (ved AUTO_SCROLL_SCREEN_BASE) op til
+        // AUTO_SCROLL_SMALL_SCREEN_BOOST_MAX (ved AUTO_SCROLL_SMALL_SCREEN_MIN_WIDTH)
+        const denom = Math.max(1, AUTO_SCROLL_SCREEN_BASE - AUTO_SCROLL_SMALL_SCREEN_MIN_WIDTH)
+        const t = Math.max(0, Math.min(1, (AUTO_SCROLL_SCREEN_BASE - w) / denom))
+        screenScale = 1 + (AUTO_SCROLL_SMALL_SCREEN_BOOST_MAX - 1) * t
+      }
+
+      const speedPerSec = AUTO_SCROLL_BASE_PER_SEC * screenScale
+      // Brug deltaTime så hastigheden føles ens ved forskellige framerates
+      targetScrollProgress = Math.min(1, targetScrollProgress + speedPerSec * deltaTime)
       totalScroll = targetScrollProgress
 
       // Stop auto-scroll når vi når enden
-      if (targetScrollProgress >= 1) {
-        stopAutoScroll()
-      }
+      if (targetScrollProgress >= 1) stopAutoScroll()
     }
     
     // Smooth interpolation af scroll progress (lavere værdi = mere smooth)
-    scrollProgress = lerp(scrollProgress, targetScrollProgress, 0.04)
+    // Øget lerp for lidt mere snappy/responsiv følelse ved target changes
+    scrollProgress = lerp(scrollProgress, targetScrollProgress, 0.06)
 
     // Opdater explore knappens opacity ud fra scroll — separat opførsel for frem/tilbage
     // - Hold 0 under intro (exploreButtonVisible === false)
