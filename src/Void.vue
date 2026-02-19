@@ -275,6 +275,11 @@ const landingParallaxY = ref(0) // Parallax Y offset for landing elements
 let targetLandingParallaxX = 0 // Target X for smooth interpolation
 let targetLandingParallaxY = 0 // Target Y for smooth interpolation
 const landingAnimationStarted = ref(false) // Track if landing animation has begun
+const landingSwayStarted = ref(false) // True once sway animation has begun (controls scroll hint & scroll lock)
+// Threshold (0..1) at which we consider sway "started" for enabling scroll/hint — increase to delay activation
+const SWAY_START_THRESHOLD = 0.6
+// Extra small delay (ms) applied when marking sway as started (smooths UI timing)
+const SWAY_START_DELAY_MS = 350
 const landingLogoDrawProgress = ref(0) // 0-1 for SVG draw animation
 // Flag: har intro allerede kørt (bruges til at skippe langsomme delays efter første åbningsanimation)
 const introHasPlayed = ref(false)
@@ -750,6 +755,43 @@ function renderLandingNoiseWipe() {
   gl.drawArrays(gl.TRIANGLES, 0, 6)
 }
 
+function revealLandingImages({ duration = 5.2, stagger = 0.08 } = {}) {
+  if (!sceneImages || !sceneImages.length) return
+
+  // Select images that belong on the landing (exclude those with `ignoreForLanding`)
+  const landingImages = sceneImages.filter(img => img.config && !img.config.ignoreForLanding && img.imagePlane && img.textureLoaded)
+  if (!landingImages.length) return
+
+  // Ensure starting state: hidden (wipeProgress = 0)
+  landingImages.forEach(img => {
+    img.wipeProgress = 0
+    if (img.imagePlane && img.imagePlane.material && img.imagePlane.material.uniforms && img.imagePlane.material.uniforms.uWipeProgress) {
+      img.imagePlane.material.uniforms.uWipeProgress.value = 0.0
+      img.imagePlane.material.opacity = 1.0
+      img.imagePlane.material.transparent = true
+      img.imagePlane.visible = true
+      img.imagePlane.material.needsUpdate = true
+    }
+  })
+
+  // Tween the imageData.wipeProgress values — the render loop syncs these to the shader uniforms
+  gsap.killTweensOf(landingImages)
+  gsap.to(landingImages, {
+    wipeProgress: 1,
+    duration,
+    ease: 'power2.out',
+    stagger,
+    onComplete: () => {
+      landingImages.forEach(img => {
+        img.wipeProgress = 1
+        if (img.imagePlane && img.imagePlane.material && img.imagePlane.material.uniforms && img.imagePlane.material.uniforms.uWipeProgress) {
+          img.imagePlane.material.uniforms.uWipeProgress.value = 1.0
+        }
+      })
+    }
+  })
+} 
+
 // Setup displacement canvas for landing page image
 const setupDisplacementCanvas = () => {
   const canvas = landingDisplacementCanvas.value
@@ -1106,6 +1148,8 @@ onMounted(() => {
       headerLogoOpacity.value = 0
       landingLogoOpacity.value = 1
       landingSwayIntensity = 1
+      // Hvis intro er sprunget over, marker sway som startet så hint + scroll-opførsel matcher (med lille delay)
+      setTimeout(() => { landingSwayStarted.value = true }, SWAY_START_DELAY_MS)
     }
 
     // Check for saved scroll position (returning from another page)
@@ -1133,6 +1177,8 @@ onMounted(() => {
       headerLogoOpacity.value = 0
       landingLogoOpacity.value = 1
       landingSwayIntensity = 1
+      // Hvis vi hopper direkte til landing, markér at sway er begyndt (med lille delay)
+      setTimeout(() => { landingSwayStarted.value = true }, SWAY_START_DELAY_MS)
     } else {
       isReturningFromPage = false
       scrollProgress = 0
@@ -1907,16 +1953,16 @@ onMounted(() => {
               if (img.imagePlane.material.uniforms && img.imagePlane.material.uniforms.uTexture) {
                 img.imagePlane.material.uniforms.uTexture.value = img.texture
               }
-              // Sikr at wipe progress er sat til 1 så billedet er fuldt synligt
+              // Start hidden on preloader — wipeProgress = 0 (will be animated after preloader)
               if (img.imagePlane.material.uniforms && img.imagePlane.material.uniforms.uWipeProgress) {
-                img.imagePlane.material.uniforms.uWipeProgress.value = 1.0
+                img.imagePlane.material.uniforms.uWipeProgress.value = 0.0
               }
               img.imagePlane.material.opacity = 1.0
               img.imagePlane.material.transparent = true
               img.imagePlane.material.needsUpdate = true
             }
-            // Opdater wipe progress tracking
-            img.wipeProgress = 1.0
+            // Opdater wipe progress tracking (start hidden)
+            img.wipeProgress = 0
           }
           
           // Shadow planes skal være klar og kaste skygger under landing fase
@@ -1961,6 +2007,8 @@ onMounted(() => {
         
         // Marker at hele 3D oplevelsen er loadet og klar
         isWarmedUp.value = true
+        // Start landing images noise-wipe reveal immediately after preloader is removed
+        nextTick(() => { revealLandingImages({ duration: 5.2, stagger: 0.08 }) })
         
         // Start intro kamera animation (panorering fra intro position til landing position)
         if (!isReturningFromPage && introCameraStartPosition && landingCameraPosition) {
@@ -1996,7 +2044,12 @@ onMounted(() => {
               const progress = cameraAnimState.swayIntensity
               const swayFadeIn = Math.max(0, (progress - 0.5) * 2) // 0 ved 50%, 1 ved 100%
               landingSwayIntensity = swayFadeIn
-              
+              // Marker først sway som 'started' når vi har nået threshold — det forsinker aktivering af scroll/hint
+              if (swayFadeIn >= SWAY_START_THRESHOLD && !landingSwayStarted.value) {
+                // Små forskydning for at sikre at UI (hint/scroll) føles synkron
+                setTimeout(() => { landingSwayStarted.value = true }, SWAY_START_DELAY_MS)
+              }
+
               // Sæt BASE positions (uden sway) - sway tilføjes i animate() loopet
               // Dette sikrer konsistent sway-beregning både under og efter intro
               currentCameraPosition.set(cameraAnimState.x, cameraAnimState.y, cameraAnimState.z)
@@ -2008,6 +2061,8 @@ onMounted(() => {
               // Animation færdig - fortsæt sway animation
               isIntroCameraAnimating = false
               landingSwayIntensity = 1 // Fuld sway
+              // Marker at sway definitivt er startet (bruges i template + scroll-guard)
+              setTimeout(() => { landingSwayStarted.value = true }, SWAY_START_DELAY_MS)
               // Sæt base positions - sway fortsætter i animate() loopet
               currentCameraPosition.copy(landingCameraPosition)
               targetCameraPosition.copy(landingCameraPosition)
@@ -3435,9 +3490,14 @@ onMounted(() => {
   handleScroll = (event) => {
     if (event) {
       // LANDING PAGE: Som standard blokeres native landing-scroll,
-      // men hvis brugeren scroller NED (deltaY>0) skal vi tillade wheel-only
-      // manuel kontrol så brugeren kan scrolle direkte fra landing.
+      // men vi blokerer også wheel-events indtil sway-animationen er begyndt.
+      // Hvis brugeren scroller NED (deltaY>0) og developer-mode er slået til,
+      // skal vi stadig tillade wheel-only manuel kontrol så brugeren kan scrolle direkte fra landing.
       const isAtLanding = targetScrollProgress < landingScrollThreshold
+      // Bloker alle wheel-events på landing indtil sway er startet
+      if (isAtLanding && !landingSwayStarted.value) {
+        return
+      }
       // Tillad manuel scrolling hvis udvikler-mode er slået til
       if (isAtLanding && !manualScrollEnabled.value) {
         if (event && event.deltaY > 0) {
@@ -4464,17 +4524,20 @@ onMounted(() => {
           // Opdater material opacity og wipe progress for smooth fade
           // Brug material.opacity direkte for fade-effekt
           if (imageData.imagePlane.material) {
+            // Material opacity følger landing fade (scroll)
             imageData.imagePlane.material.opacity = imagesOpacity
             imageData.imagePlane.material.transparent = true
-            // Sikr at wipe progress er sat til 1 så billedet er fuldt synligt
+
+            // Brug produkt af landing fade (imagesOpacity) og imageData.wipeProgress
+            // så billeder forbliver skjulte indtil wipeProgress (styret af revealLandingImages) > 0
+            const effectiveWipe = (typeof imageData.wipeProgress === 'number') ? imageData.wipeProgress : 1.0
             if (imageData.imagePlane.material.uniforms && imageData.imagePlane.material.uniforms.uWipeProgress) {
-              imageData.imagePlane.material.uniforms.uWipeProgress.value = imagesOpacity
+              imageData.imagePlane.material.uniforms.uWipeProgress.value = imagesOpacity * effectiveWipe
             }
             imageData.imagePlane.material.needsUpdate = true
           }
           
-          // Opdater wipe progress tracking
-          imageData.wipeProgress = imagesOpacity
+          // NOTE: behold imageData.wipeProgress uændret her — revealLandingImages eller distance-baseret logic styrer den
           
           // Opdater shadow progress så skyggerne er synlige - gør dem meget mere synlige på landing page
           if (imageData.shadowPlane && imageData.shadowPlane.material) {
@@ -5368,14 +5431,16 @@ onUnmounted(() => {
       Explore Your Garden
     </button>
 
-    <!-- Mouse-following hint on landing: Scroll down -->
-    <div
-      v-if="isWarmedUp && scrollProgress < landingScrollThreshold"
-      class="scroll-to-explore-text"
-      :style="{ left: (scrollTextX + 'px'), top: (scrollTextY + 'px'), opacity: scrollHintOpacity }"
-    >
-      Scroll down
-    </div>
+    <!-- Mouse-following hint on landing: Scroll down (fades in via <transition>) -->
+    <transition name="scroll-fade" appear>
+      <div
+        v-if="isWarmedUp && scrollProgress < landingScrollThreshold && landingSwayStarted"
+        class="scroll-to-explore-text"
+        :style="{ left: (scrollTextX + 'px'), top: (scrollTextY + 'px') }"
+      >
+        Scroll down
+      </div>
+    </transition>
     
     <!-- Introduktion tekst med fade effekt -->
     <div 
@@ -5695,6 +5760,7 @@ onUnmounted(() => {
   font-size: 0.65rem;
   letter-spacing: 0.35em;
   text-transform: uppercase;
+  /* final/visible opacity — transition handled via <transition> classes */
   opacity: 0.9;
   color: rgba(26, 26, 26, 0.95);
   font-family: 'Boska-Regular', serif;
@@ -5704,6 +5770,28 @@ onUnmounted(() => {
               transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   will-change: transform, opacity;
+}
+
+/* Transition classes for the Scroll-down hint (enter animation) */
+.scroll-fade-enter-active {
+  /* Langsommere, mere filmisk ind-fade */
+  transition: opacity 700ms cubic-bezier(0.2, 0, 0.2, 1), transform 700ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+.scroll-fade-enter-from {
+  opacity: 0;
+  transform: translate(-50%, -50%) translateY(8px);
+}
+.scroll-fade-enter-to {
+  opacity: 0.9; /* matches .scroll-to-explore-text final opacity */
+  transform: translate(-50%, -50%) translateY(0);
+}
+.scroll-fade-leave-active {
+  /* Matchende langsommere ud-fade */
+  transition: opacity 450ms ease, transform 450ms ease;
+}
+.scroll-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) translateY(8px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
