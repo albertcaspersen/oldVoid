@@ -40,6 +40,7 @@ let previousClampedIndex = -1 // Track previous clamped index to detect when scr
 // Landing page state
 // Landing logo vises nu som HTML element (ikke 3D)
 let isInLandingPhase = true // Om vi er i landing-fasen (kigger ned på papiret)
+let previousIsInLandingPhase = true // Track previous state to detect transitions into landing (used to restore images)
 const landingScrollThreshold = 0.03 // Hvor meget scroll der skal til før vi forlader landing (ca. 3% af total scroll)
 const pathEndPoint = 0.78 // Path slutpunkt (0.78 = stopper ved 78% af pathen)
 const cameraStartThreshold = 0.1 // Hvor meget scroll der skal til før kameraet begynder at bevæge sig
@@ -3013,7 +3014,14 @@ onMounted(() => {
     imageData.shadowPlane = shadowPlane
     
     // Reset progress tracking
-    imageData.wipeProgress = 0
+    // Hvis vi re-creator et billede mens vi er på landing, gør det synligt med det samme
+    const isHiddenOnLanding = imageData.config && (imageData.config.ignoreForLanding === true)
+    imageData.wipeProgress = (isInLandingPhase && !isHiddenOnLanding) ? 1 : 0
+    // Hvis vi netop har genskabt et billede, synkroniser shader-uniformen
+    if (imageData.imagePlane && imageData.imagePlane.material && imageData.imagePlane.material.uniforms && imageData.imagePlane.material.uniforms.uWipeProgress) {
+      imageData.imagePlane.material.uniforms.uWipeProgress.value = imageData.wipeProgress
+      imageData.imagePlane.material.needsUpdate = true
+    }
     imageData.lastShadowProgress = 0
     imageData.waitForComplete = false
     imageData.startScrollProgress = null
@@ -3313,6 +3321,40 @@ onMounted(() => {
     if (scrollProgress < landingScrollThreshold) {
       // LANDING FASE: Animer fra landing position (kigger mod billederne) til path start
       isInLandingPhase = true
+
+      // Hvis vi *netop* er kommet tilbage til landing (transition), sørg for at landing-billeder vises
+      if (!previousIsInLandingPhase) {
+        const hiddenOnLandingPage = [
+          '/pics/portFarve.png',
+          '/pics/portSketch.png',
+          '/pics/blomstKrukke.png',
+          '/pics/fontaine.png',
+          '/pics/Gemini_Generated_Image_phek2ephek2ephek 1.png',
+          '/pics/hvideblomster.png',
+          '/pics/højTræFarve.png',
+          '/pics/image 22.png',
+          '/pics/kruk.png',
+          '/pics/lillablomst.png',
+          '/pics/sketchtræ.png',
+          '/pics/træPot.png'
+        ]
+
+        sceneImages.forEach(img => {
+          if (!img || !img.config) return
+          const isHiddenOnLanding = hiddenOnLandingPage.includes(img.config.path) || img.config.id === 'portSketch' || img.config.id === 'hvideblomster' || img.config.id === 'sketch1' || img.config.ignoreForLanding === true
+          if (isHiddenOnLanding) return
+
+          // Hvis billedet er disposed, lad recreateSceneImage håndtere synligheden senere;
+          // ellers sørg for at det er fuldt synligt på landing
+          img.wipeProgress = 1
+          if (img.imagePlane && img.imagePlane.material && img.imagePlane.material.uniforms && img.imagePlane.material.uniforms.uWipeProgress) {
+            img.imagePlane.material.uniforms.uWipeProgress.value = 1.0
+            img.imagePlane.visible = true
+            img.imagePlane.material.needsUpdate = true
+          }
+        })
+      }
+      previousIsInLandingPhase = true
       
       // Behold scene baggrund synlig under landing fase så horisonten er synlig
       // Sikr altid at baggrunden er sat til den korrekte farve
@@ -3366,7 +3408,9 @@ onMounted(() => {
     } else {
       // PATH FASE: Normal path-følgning
       isInLandingPhase = false
-      
+      // Marker at vi har forladt landing så en senere tilbagevenden kan trigge restore
+      previousIsInLandingPhase = false
+
       // Gendan scene baggrund når vi forlader landing fase
       if (scene.background === null) {
         scene.background = new THREE.Color(0xF0EEE9)
