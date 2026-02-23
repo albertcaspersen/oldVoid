@@ -22,23 +22,23 @@ let touchStartY = 0
 let isMobile = false
 
 const cases = [
-  { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
-  { id: 2, title: 'A Cottage Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/acottagegarden-min.jpg' },
-  { id: 3, title: 'A Modern Garden', location: 'Urban', category: 'urban', year: '2024', image: '/pics/casesPics/AModernGarden-min.png' },
-  { id: 4, title: 'A Rural Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/aruralgarden-min.jpg' },
-  { id: 5, title: 'Beach House', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/beachhouse-min.jpg' },
-  { id: 6, title: 'Brighton Garden', location: 'Brighton', category: 'residential', year: '2024', image: '/pics/casesPics/brightongarden-min.jpg' },
-  { id: 7, title: 'Cobham Garden', location: 'Cobham', category: 'residential', year: '2023', image: '/pics/casesPics/cobham-min.jpg' },
-  { id: 8, title: 'Copenhagen Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/copenhagengarden-min.jpg' },
-  { id: 9, title: 'Courtyard Garden', location: 'Urban', category: 'urban', year: '2023', image: '/pics/casesPics/courtyardgarden-min.png' },
-  { id: 10, title: 'CPH Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/cphgarden-min.jpg' },
-  { id: 11, title: 'Entertainment Garden', location: 'Estate', category: 'estate', year: '2023', image: '/pics/casesPics/entertainmentgarden-min.jpg' },
-  { id: 12, title: 'London Garden', location: 'London', category: 'urban', year: '2024', image: '/pics/casesPics/londongarden-min.jpg' },
-  { id: 13, title: 'Oxshott Garden', location: 'Oxshott', category: 'residential', year: '2024', image: '/pics/casesPics/Our-Landscape-Designs-Oxshott-Garden-Plan-Ourlandscapedesigns.com_-min-min.png' },
-  { id: 14, title: 'Seaside Garden', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/Our-Landscape-Designs-garden-design-designer-Ourlandscapedesigns.com-copy-min-min.jpg' },
-  { id: 15, title: 'St. Georges Hill', location: 'Surrey', category: 'estate', year: '2024', image: '/pics/casesPics/stgeorgeshill-min.png' },
-  { id: 16, title: 'Summer House', location: 'Countryside', category: 'residential', year: '2023', image: '/pics/casesPics/summerhouse-min.jpg' },
-  { id: 17, title: 'Tudor House', location: 'Historic', category: 'residential', year: '2024', image: '/pics/casesPics/tudorhouse.jpg' },
+  { id: 1, title: 'Design 1', location: '', category: '', year: '', image: '/pics/DesignsPics/69a73c33-4aee-4b11-9da9-29a201e3f5b4.JPG' },
+  { id: 2, title: 'Design 2', location: '', category: '', year: '', image: '/pics/DesignsPics/7E5B1840-F4AF-498E-8A72-19B92BFC39FD.JPG' },
+  { id: 3, title: 'Design 3', location: '', category: '', year: '', image: '/pics/DesignsPics/875f50c2-91e9-48f9-8d4f-5789fb6b1f01.JPG' },
+  { id: 4, title: 'Design 4', location: '', category: '', year: '', image: '/pics/DesignsPics/94f2ac05-19ca-42a0-a57f-829fbff4deea.JPG' },
+  { id: 5, title: 'Design 5', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0005.JPG' },
+  { id: 6, title: 'Design 6', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0010.JPG' },
+  { id: 7, title: 'Design 7', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0015.JPG' },
+  { id: 8, title: 'Design 8', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_2666.JPG' },
+  { id: 9, title: 'Design 9', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_3087.JPG' },
+  { id: 10, title: 'Design 10', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_3088.JPG' },
+  { id: 11, title: 'Design 11', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_4120.JPG' },
+  { id: 12, title: 'Design 12', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_4747.JPG' },
+  { id: 13, title: 'Design 13', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_5180.JPG' },
+  { id: 14, title: 'Design 14', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_6631.JPG' },
+  { id: 15, title: 'Design 15', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-28-56.JPG' },
+  { id: 16, title: 'Design 16', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-28-57.JPG' },
+  { id: 17, title: 'Design 17', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-31-45.JPG' },
 ]
 
 const currentCaseIndex = ref(0)
@@ -417,7 +417,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="cases-page">
+  <div class="ourdesigns-page">
     <div class="paper-overlay"></div>
     <Nav />
 
@@ -470,7 +470,7 @@ onUnmounted(() => {
         <div class="hero-content">
           <h1 class="hero-title" data-section="hero" :class="{ visible: visibleSections.has('hero') }">
             <span class="title-line">Our</span>
-            <span class="title-line title-accent">cases</span>
+            <span class="title-line title-accent">Designs</span>
           </h1>
           <p class="hero-subtitle" :class="{ visible: visibleSections.has('hero') }">
             Where gardens become art
@@ -511,7 +511,7 @@ html.smooth-scroll-active body {
 </style>
 
 <style scoped>
-.cases-page {
+.ourdesigns-page {
   background: #F0EEE9;
   color: #1a1a1a;
   font-family: 'Boska', serif;
@@ -520,7 +520,7 @@ html.smooth-scroll-active body {
 
 /* Mobile: use overflow-clip-margin to avoid breaking sticky */
 @media (max-width: 900px) {
-  .cases-page {
+  .ourdesigns-page {
     overflow-x: clip;
     overflow-y: visible;
   }
@@ -557,7 +557,7 @@ html.smooth-scroll-active .scroll-container {
   background-size: 500px 500px;
   background-repeat: repeat;
   pointer-events: none;
-  /* put the texture behind content like other pages */
+  /* move it back like on About/Contact pages */
   z-index: 2;
   mix-blend-mode: multiply;
 

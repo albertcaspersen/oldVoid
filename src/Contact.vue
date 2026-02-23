@@ -634,7 +634,7 @@ body {
 
 .center-line-svg {
   position: absolute;
-  top: 50vh;
+  top: 40vh;
   left: 3rem;
   right: 3rem;
   width: calc(100% - 6rem);
@@ -699,7 +699,7 @@ body {
 /* ===== Hero Section ===== */
 .hero {
   position: relative;
-  height: 50vh;
+  height: 40vh;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -712,6 +712,7 @@ body {
   z-index: 3;
   text-align: center;
   padding: clamp(1rem, 2vh, 2rem);
+  transform: translateY(-15%);
 }
 
 .hero-title {

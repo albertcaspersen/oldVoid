@@ -48,15 +48,16 @@ const goToCases = () => {
   router.push('/cases')
 }
 
+const goToOurDesigns = () => {
+  if (props.onNavigate) props.onNavigate()
+  router.push('/ourdesigns')
+}
+
 const goToContact = () => {
   if (props.onNavigate) props.onNavigate()
   router.push('/contact')
 }
 
-const goToProducts = () => {
-  if (props.onNavigate) props.onNavigate()
-  router.push('/products')
-}
 
 // Toggle burger menu
 const toggleMenu = () => {
@@ -153,7 +154,7 @@ watch([() => props.isWarmedUp, () => route.path, navBarRef], ([warmedUp, path, n
         <a v-if="route.path !== '/'" href="#" @click.prevent="() => { goHome(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Home</span></a>
         <a v-if="route.path !== '/about'" href="#" @click.prevent="() => { goToAbout(); closeMenu(); }" class="menu-item"><span class="menu-item-label">About</span></a>
         <a v-if="route.path !== '/cases'" href="#" @click.prevent="() => { goToCases(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Cases</span></a>
-        <a v-if="route.path !== '/products'" href="#" @click.prevent="() => { goToProducts(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Products</span></a>
+        <a v-if="route.path !== '/ourdesigns'" href="#" @click.prevent="() => { goToOurDesigns(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Our Designs</span></a>
         <a v-if="route.path !== '/contact'" href="#" @click.prevent="() => { goToContact(); closeMenu(); }" class="menu-item"><span class="menu-item-label">Contact</span></a>
       </div>
     </div>

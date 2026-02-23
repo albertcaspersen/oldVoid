@@ -767,7 +767,8 @@ html.smooth-scroll-active .scroll-container {
 
 .center-line-svg {
   position: absolute;
-  top: 50vh;
+  /* keep the animated pencil stroke matching the reduced hero height */
+  top: 40vh;
   left: 3rem;
   right: 3rem;
   width: calc(100% - 6rem);
@@ -798,7 +799,8 @@ html.smooth-scroll-active .scroll-container {
 /* ===== Hero Section ===== */
 .hero {
   position: relative;
-  height: 50vh;
+  /* even shorter now so everything shifts upward more */
+  height: 40vh;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -811,6 +813,8 @@ html.smooth-scroll-active .scroll-container {
   z-index: 3;
   text-align: center;
   padding: clamp(1rem, 2vh, 2rem);
+  /* nudge the title/subtitle upward within the hero area */
+  transform: translateY(-15%);
 }
 
 .hero-title {

@@ -3,7 +3,7 @@ import Void from '../Void.vue'
 import AboutUs from '../AboutUs.vue'
 import Contact from '../Contact.vue'
 import Cases from '../Cases.vue'
-import Products from '../Products.vue'
+import OurDesigns from '../OurDesigns.vue'
 
 const routes = [
   {
@@ -22,15 +22,15 @@ const routes = [
     component: Cases
   },
   {
+    path: '/ourdesigns',
+    name: 'OurDesigns',
+    component: OurDesigns
+  },
+  {
     path: '/contact',
     name: 'Contact',
     component: Contact
   },
-  {
-    path: '/products',
-    name: 'Products',
-    component: Products
-  }
 ]
 
 const router = createRouter({

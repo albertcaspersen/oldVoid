@@ -443,7 +443,6 @@ let use3DNav = false // Toggle to use legacy 3D nav meshes (we'll use 2D links i
 const navLinks = [
   { label: 'About', route: '/about' },
   { label: 'Cases', route: '/cases' },
-  { label: 'Products', route: '/products' },
   { label: 'Contact', route: '/contact' }
 ]
 // Delay before starting the end-nav GSAP animation (seconds)
