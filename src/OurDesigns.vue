@@ -660,6 +660,8 @@ html.smooth-scroll-active .scroll-container {
   .gallery-container {
     position: relative;
     overflow: visible;
+    /* shift the entire image stack upward by a fixed viewport amount */
+    margin-top: -20vh;
   }
   
   .manual-sticky-wrapper {
