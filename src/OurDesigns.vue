@@ -21,6 +21,14 @@ const ease = 0.08
 let touchStartY = 0
 let isMobile = false
 
+// utility: random in-place shuffle (Fisher–Yates)
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+}
+
 const cases = [
   { id: 1, title: 'Design 1', location: '', category: '', year: '', image: '/pics/DesignsPics/69a73c33-4aee-4b11-9da9-29a201e3f5b4.JPG' },
   { id: 2, title: 'Design 2', location: '', category: '', year: '', image: '/pics/DesignsPics/7E5B1840-F4AF-498E-8A72-19B92BFC39FD.JPG' },
@@ -41,14 +49,11 @@ const cases = [
   { id: 17, title: 'Design 17', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-31-45.JPG' },
 ]
 
+// randomise order on every mount
+shuffleArray(cases)
+
 const currentCaseIndex = ref(0)
 const currentCase = computed(() => cases[currentCaseIndex.value] || cases[0])
-
-// Show titles as sentence-case: first letter uppercase, rest lowercase
-const displayTitle = computed(() => {
-  const t = currentCase.value && currentCase.value.title ? String(currentCase.value.title) : ''
-  return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : ''
-})
 
 let scene, camera, renderer, animationId
 let imagePlanes = []
@@ -282,9 +287,10 @@ const handleStickyAndThree = () => {
   const totalScrollableHeight = galleryHeight - viewHeight
   
   // Tilføj en offset så første billede ikke vipper med det samme
-  // reducer startOffset en smule for at starte rotationen tidligere
-  const startOffset = totalScrollableHeight * 0.02
-  const endOffset = totalScrollableHeight * 0.05
+  // Reducer scroll‑afstand en smule for at få første billede til at begynde
+  // at vride sig tidligere og afslutte før resten af galleriet.
+  const startOffset = totalScrollableHeight * 0.01  // tidligere 0.02
+  const endOffset = totalScrollableHeight * 0.03    // tidligere 0.05
   const adjustedScrollDistance = Math.max(0, scrolledIntoGallery - startOffset)
   const adjustedTotalHeight = totalScrollableHeight - startOffset - endOffset
   
@@ -483,11 +489,7 @@ onUnmounted(() => {
         <div ref="stickyWrapper" class="manual-sticky-wrapper">
           <div ref="canvasRef" class="gallery-canvas"></div>
           
-          <div class="case-info">
-            <p class="case-category">{{ currentCase.category }}</p>
-            <h2 class="case-title">{{ displayTitle }}</h2>
-          </div>
-          
+          <!-- case-info removed; only counter remains -->
           <div class="case-counter">
             <span class="current">{{ String(currentCaseIndex + 1).padStart(2, '0') }}</span>
             <span class="separator">/</span>

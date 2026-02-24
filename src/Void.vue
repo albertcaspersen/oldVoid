@@ -1716,7 +1716,19 @@ onMounted(() => {
       '/pics/casesPics/Our-Landscape-Designs-garden-design-designer-Ourlandscapedesigns.com-copy-min-min.jpg',
       '/pics/casesPics/stgeorgeshill-min.png',
       '/pics/casesPics/summerhouse-min.jpg',
-      '/pics/casesPics/tudorhouse.jpg'
+      '/pics/casesPics/tudorhouse.jpg',
+      // newly added sketches from public/pics/casesPics
+      '/pics/casesPics/Osketch1-min.png',
+      '/pics/casesPics/Osketch2-min.png',
+      '/pics/casesPics/Osketch3-min.png',
+      '/pics/casesPics/Osketch4-min.png',
+      '/pics/casesPics/Osketch5-min.png',
+      '/pics/casesPics/Osketch6-min.png',
+      '/pics/casesPics/Osketch7-min.png',
+      '/pics/casesPics/Osketch8-min.png',
+      '/pics/casesPics/Osketch9-min.png',
+      '/pics/casesPics/Osketch10-min.png',
+      '/pics/casesPics/Osketch11-min.png'
     ]
     
     // Total items: paper texture + brush model + scene billeder + case billeder + audio filer (pen model ikke på landing)

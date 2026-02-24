@@ -21,34 +21,38 @@ const ease = 0.08
 let touchStartY = 0
 let isMobile = false
 
+// utility: random in-place shuffle (Fisher–Yates)
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[array[i], array[j]] = [array[j], array[i]]
+  }
+}
+
 const cases = [
   { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
-  { id: 2, title: 'A Cottage Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/acottagegarden-min.jpg' },
-  { id: 3, title: 'A Modern Garden', location: 'Urban', category: 'urban', year: '2024', image: '/pics/casesPics/AModernGarden-min.png' },
-  { id: 4, title: 'A Rural Garden', location: 'Countryside', category: 'residential', year: '2024', image: '/pics/casesPics/aruralgarden-min.jpg' },
-  { id: 5, title: 'Beach House', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/beachhouse-min.jpg' },
-  { id: 6, title: 'Brighton Garden', location: 'Brighton', category: 'residential', year: '2024', image: '/pics/casesPics/brightongarden-min.jpg' },
-  { id: 7, title: 'Cobham Garden', location: 'Cobham', category: 'residential', year: '2023', image: '/pics/casesPics/cobham-min.jpg' },
   { id: 8, title: 'Copenhagen Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/copenhagengarden-min.jpg' },
-  { id: 9, title: 'Courtyard Garden', location: 'Urban', category: 'urban', year: '2023', image: '/pics/casesPics/courtyardgarden-min.png' },
-  { id: 10, title: 'CPH Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/cphgarden-min.jpg' },
   { id: 11, title: 'Entertainment Garden', location: 'Estate', category: 'estate', year: '2023', image: '/pics/casesPics/entertainmentgarden-min.jpg' },
-  { id: 12, title: 'London Garden', location: 'London', category: 'urban', year: '2024', image: '/pics/casesPics/londongarden-min.jpg' },
-  { id: 13, title: 'Oxshott Garden', location: 'Oxshott', category: 'residential', year: '2024', image: '/pics/casesPics/Our-Landscape-Designs-Oxshott-Garden-Plan-Ourlandscapedesigns.com_-min-min.png' },
-  { id: 14, title: 'Seaside Garden', location: 'Coastal', category: 'residential', year: '2023', image: '/pics/casesPics/Our-Landscape-Designs-garden-design-designer-Ourlandscapedesigns.com-copy-min-min.jpg' },
-  { id: 15, title: 'St. Georges Hill', location: 'Surrey', category: 'estate', year: '2024', image: '/pics/casesPics/stgeorgeshill-min.png' },
-  { id: 16, title: 'Summer House', location: 'Countryside', category: 'residential', year: '2023', image: '/pics/casesPics/summerhouse-min.jpg' },
   { id: 17, title: 'Tudor House', location: 'Historic', category: 'residential', year: '2024', image: '/pics/casesPics/tudorhouse.jpg' },
+  // sketches – added automatically from public/pics/casesPics
+  { id: 18, title: 'Sketch 1', location: '', category: '', year: '', image: '/pics/casesPics/Osketch1-min.png' },
+  { id: 19, title: 'Sketch 2', location: '', category: '', year: '', image: '/pics/casesPics/Osketch2-min.png' },
+  { id: 20, title: 'Sketch 3', location: '', category: '', year: '', image: '/pics/casesPics/Osketch3-min.png' },
+  { id: 21, title: 'Sketch 4', location: '', category: '', year: '', image: '/pics/casesPics/Osketch4-min.png' },
+  { id: 22, title: 'Sketch 5', location: '', category: '', year: '', image: '/pics/casesPics/Osketch5-min.png' },
+  { id: 23, title: 'Sketch 6', location: '', category: '', year: '', image: '/pics/casesPics/Osketch6-min.png' },
+  { id: 24, title: 'Sketch 7', location: '', category: '', year: '', image: '/pics/casesPics/Osketch7-min.png' },
+  { id: 25, title: 'Sketch 8', location: '', category: '', year: '', image: '/pics/casesPics/Osketch8-min.png' },
+  { id: 26, title: 'Sketch 9', location: '', category: '', year: '', image: '/pics/casesPics/Osketch9-min.png' },
+  { id: 27, title: 'Sketch 10', location: '', category: '', year: '', image: '/pics/casesPics/Osketch10-min.png' },
+  { id: 28, title: 'Sketch 11', location: '', category: '', year: '', image: '/pics/casesPics/Osketch11-min.png' },
 ]
+
+// randomise order on every mount
+shuffleArray(cases)
 
 const currentCaseIndex = ref(0)
 const currentCase = computed(() => cases[currentCaseIndex.value] || cases[0])
-
-// Show titles as sentence-case: first letter uppercase, rest lowercase
-const displayTitle = computed(() => {
-  const t = currentCase.value && currentCase.value.title ? String(currentCase.value.title) : ''
-  return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : ''
-})
 
 let scene, camera, renderer, animationId
 let imagePlanes = []
@@ -282,9 +286,11 @@ const handleStickyAndThree = () => {
   const totalScrollableHeight = galleryHeight - viewHeight
   
   // Tilføj en offset så første billede ikke vipper med det samme
-  // reducer startOffset en smule for at starte rotationen tidligere
-  const startOffset = totalScrollableHeight * 0.02
-  const endOffset = totalScrollableHeight * 0.05
+  // Reducer scroll‑afstand en smule for at få første billede til at begynde
+  // at vride sig tidligere og afslutte før resten af galleriet.
+  // Ved at skrue ned på procentdelene bliver "scroll‑tiden" for billedet kortere.
+  const startOffset = totalScrollableHeight * 0.01  // tidligere 0.02
+  const endOffset = totalScrollableHeight * 0.03    // tidligere 0.05
   const adjustedScrollDistance = Math.max(0, scrolledIntoGallery - startOffset)
   const adjustedTotalHeight = totalScrollableHeight - startOffset - endOffset
   
@@ -483,11 +489,7 @@ onUnmounted(() => {
         <div ref="stickyWrapper" class="manual-sticky-wrapper">
           <div ref="canvasRef" class="gallery-canvas"></div>
           
-          <div class="case-info">
-            <p class="case-category">{{ currentCase.category }}</p>
-            <h2 class="case-title">{{ displayTitle }}</h2>
-          </div>
-          
+          <!-- case-info removed; only counter remains -->
           <div class="case-counter">
             <span class="current">{{ String(currentCaseIndex + 1).padStart(2, '0') }}</span>
             <span class="separator">/</span>
