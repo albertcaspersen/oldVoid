@@ -10,6 +10,12 @@ const gallerySectionRef = ref(null)
 const scrollContainer = ref(null)
 const stickyWrapper = ref(null)
 
+// pixel height for gallery to avoid 100vh bugs on mobile
+const galleryHeightPx = ref(0)
+function updateGalleryHeight() {
+  galleryHeightPx.value = window.innerHeight * cases.length
+}
+
 // --- SMOOTH SCROLL STATE ---
 const currentScroll = ref(0)
 let targetScroll = 0
@@ -289,8 +295,11 @@ const handleStickyAndThree = () => {
   // Tilføj en offset så første billede ikke vipper med det samme
   // Reducer scroll‑afstand en smule for at få første billede til at begynde
   // at vride sig tidligere og afslutte før resten af galleriet.
-  const startOffset = totalScrollableHeight * 0.01  // tidligere 0.02
-  const endOffset = totalScrollableHeight * 0.03    // tidligere 0.05
+  // same adjustment as in Cases.vue – mobile scroll is native and the
+  // 100vh height can shrink when the address bar hides, so don't eat into the
+  // tail of the gallery or the last drawings never surface.
+  const startOffset = totalScrollableHeight * (isMobile ? 0.005 : 0.01)
+  const endOffset = totalScrollableHeight * (isMobile ? 0 : 0.03)
   const adjustedScrollDistance = Math.max(0, scrolledIntoGallery - startOffset)
   const adjustedTotalHeight = totalScrollableHeight - startOffset - endOffset
   
@@ -363,6 +372,7 @@ onMounted(() => {
   isMobile = window.innerWidth <= 900
 
   nextTick(() => {
+    updateGalleryHeight()
     initThree()
 
     if (!isMobile) {
@@ -390,6 +400,7 @@ onMounted(() => {
 
     // Resize handler (always update three renderer)
     window.addEventListener('resize', () => {
+      updateGalleryHeight()
       if (!isMobile) {
         document.body.style.height = `${scrollContainer.value.scrollHeight}px`
       }
@@ -485,7 +496,7 @@ onUnmounted(() => {
       </section>
 
       <!-- GALLERI SEKTION -->
-      <section ref="gallerySectionRef" class="gallery-container" :style="{ height: (cases.length * 100) + 'vh' }">
+      <section ref="gallerySectionRef" class="gallery-container" :style="{ height: galleryHeightPx + 'px' }">
         <div ref="stickyWrapper" class="manual-sticky-wrapper">
           <div ref="canvasRef" class="gallery-canvas"></div>
           

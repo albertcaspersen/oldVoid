@@ -10,6 +10,12 @@ const gallerySectionRef = ref(null)
 const scrollContainer = ref(null)
 const stickyWrapper = ref(null)
 
+// store a pixel height instead of relying on 100vh (mobile browsers shrink it)
+const galleryHeightPx = ref(0)
+function updateGalleryHeight() {
+  galleryHeightPx.value = window.innerHeight * cases.length
+}
+
 // --- SMOOTH SCROLL STATE ---
 const currentScroll = ref(0)
 let targetScroll = 0
@@ -289,8 +295,17 @@ const handleStickyAndThree = () => {
   // Reducer scroll‑afstand en smule for at få første billede til at begynde
   // at vride sig tidligere og afslutte før resten af galleriet.
   // Ved at skrue ned på procentdelene bliver "scroll‑tiden" for billedet kortere.
-  const startOffset = totalScrollableHeight * 0.01  // tidligere 0.02
-  const endOffset = totalScrollableHeight * 0.03    // tidligere 0.05
+  // start a little earlier so the first plate begins to pivot before the
+  // very top of the section.  On mobile we can tighten the gap even further
+  // (and avoid cutting off the last items) because the viewport is smaller
+  // and the user scrolls natively.
+  const startOffset = totalScrollableHeight * (isMobile ? 0.005 : 0.01)
+  // there used to be a small "endOffset" to let the last picture finish its
+  // rotation after the user passed the bottom of the section. with eleven
+  // extra sketches that trailing gap was eating up several cards so they never
+  // became upright on phones. we just remove it on mobile completely and keep
+  // it tiny on desktop.
+  const endOffset = totalScrollableHeight * (isMobile ? 0 : 0.03)
   const adjustedScrollDistance = Math.max(0, scrolledIntoGallery - startOffset)
   const adjustedTotalHeight = totalScrollableHeight - startOffset - endOffset
   
@@ -363,6 +378,7 @@ onMounted(() => {
   isMobile = window.innerWidth <= 900
 
   nextTick(() => {
+    updateGalleryHeight()
     initThree()
 
     if (!isMobile) {
@@ -390,6 +406,7 @@ onMounted(() => {
 
     // Resize handler (always update three renderer)
     window.addEventListener('resize', () => {
+      updateGalleryHeight()
       if (!isMobile) {
         document.body.style.height = `${scrollContainer.value.scrollHeight}px`
       }
@@ -485,7 +502,7 @@ onUnmounted(() => {
       </section>
 
       <!-- GALLERI SEKTION -->
-      <section ref="gallerySectionRef" class="gallery-container" :style="{ height: (cases.length * 100) + 'vh' }">
+      <section ref="gallerySectionRef" class="gallery-container" :style="{ height: galleryHeightPx + 'px' }">
         <div ref="stickyWrapper" class="manual-sticky-wrapper">
           <div ref="canvasRef" class="gallery-canvas"></div>
           
