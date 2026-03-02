@@ -13,7 +13,8 @@ const stickyWrapper = ref(null)
 // store a pixel height instead of relying on 100vh (mobile browsers shrink it)
 const galleryHeightPx = ref(0)
 function updateGalleryHeight() {
-  galleryHeightPx.value = window.innerHeight * cases.length
+  const vh = isMobile ? stableVh : window.innerHeight
+  galleryHeightPx.value = vh * cases.length
 }
 
 // --- SMOOTH SCROLL STATE ---
@@ -26,6 +27,7 @@ const ease = 0.08
 // Touch state for mobile
 let touchStartY = 0
 let isMobile = false
+let stableVh = 0
 
 // utility: random in-place shuffle (Fisher–Yates)
 function shuffleArray(array) {
@@ -274,7 +276,7 @@ const handleStickyAndThree = () => {
   
   const galleryRect = gallerySectionRef.value.getBoundingClientRect()
   const galleryHeight = gallerySectionRef.value.offsetHeight
-  const viewHeight = window.innerHeight
+  const viewHeight = isMobile ? stableVh : window.innerHeight
   
   // On desktop: manually position the sticky wrapper with transform
   // On mobile: CSS sticky handles the positioning, we just update Three.js
@@ -377,6 +379,7 @@ let handleMobileScroll = null
 onMounted(() => {
   // Decide whether to use custom smooth scrolling or native mobile scrolling
   isMobile = window.innerWidth <= 900
+  stableVh = window.innerHeight
 
   nextTick(() => {
     updateGalleryHeight()
@@ -407,8 +410,8 @@ onMounted(() => {
 
     // Resize handler (always update three renderer)
     window.addEventListener('resize', () => {
-      updateGalleryHeight()
       if (!isMobile) {
+        updateGalleryHeight()
         document.body.style.height = `${scrollContainer.value.scrollHeight}px`
       }
       const aspect = canvasRef.value.clientWidth / canvasRef.value.clientHeight
@@ -753,7 +756,10 @@ html.smooth-scroll-active .scroll-container {
   }
   
   .case-counter {
-    bottom: 50%;
+    bottom: 20%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
   
   .grid-container {
