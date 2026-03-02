@@ -24,23 +24,30 @@ const parallaxFactor = ref(-0.08)
 const visibleSections = ref(new Set())
 
 // Wipe progress for each team member (0 to 1)
-const memberWipeProgress = ref([0, 0])
+const memberWipeProgress = ref([0, 0, 0])
 
 // Team data
 const team = [
   {
     name: 'Nete Højlund',
-    title: 'Dip. (Grd Design)',
-    bio: 'Originally an interior designer I was always attracted to the idea of extending interior design into the exterior space viewing the spaces as a whole. Awarded KLC Design of the Year (2010) followed by RHS Silver Gilt Hampton Court Flower Show (2011) I co-founded the garden design practise that today enjoys international recognition.',
+    title: 'Working in Copenhagen.',
+    bio: 'Diploma in garden design from KLC School of Design in London 2010 & Founder.',
     email: 'nete@ourlandscapedesigns.com',
     image: '/pics/neteNyt.png'
   },
   {
     name: 'Irene Højlund',
-    title: 'Project Manager',
-    bio: 'I\'m passionate about gardening and outdoors which attracted me here, from a career as coordinator. I attend to design briefings, meetings and site surveys with the designer and take over from there running the projects in Denmark.',
+    title: 'Working in Copenhagen.',
+    bio: 'Project & administrative Manager & Co-Founder.',
     email: 'irene@ourlandscapedesigns.com',
-    image: '/pics/ireneNEW.png'
+    image: '/pics/NYirene.png'
+  },
+  {
+    name: 'Burcu Phung',
+    title: 'Working in London',
+    bio: 'Diploma in garden design from KLC School of Design in London 2010 & Founder.',
+    email: 'burcu@ourlandscapedesigns.com',
+    image: '/pics/NYburcu.png'
   }
 ]
 
@@ -590,12 +597,26 @@ onUnmounted(() => {
         data-section="intro"
         :class="{ visible: visibleSections.has('intro') }"
       >
-        <div class="intro-text" data-section="intro-text" :class="{ visible: visibleSections.has('intro') }">
-          <h2>Crafting Outdoor Spaces</h2>
+        <div class="intro-text intro-col-left" data-section="intro-text" :class="{ visible: visibleSections.has('intro') }">
           <p>
-            We are two sisters passionate about transforming outdoor spaces into 
-            living works of art. Each garden we create is a unique story, tailored 
-            to reflect the dreams and personality of its owner.
+            Our garden design inspiration lies in classic formal gardens 
+            with roots in the Italian renaissance garden with their perfect 
+            elements of neat paths, shady atrium courtyards, avenues of 
+            trees, sculptural plants – all with a Nordic touch.
+            <br><br>Our designers are working out of the United Kingdom and 
+            Denmark, offering professional consulting and creative 
+            solutions with focus on functionality and aesthetic in harmony 
+            with the architecture and placement.
+          </p>
+        </div>
+        <div class="intro-text intro-col-right" data-section="intro-text-2" :class="{ visible: visibleSections.has('intro') }">
+          <p>
+            Our dedication is to meet our clients wishes and needs and 
+            have the knowledge and experience to bring them many 
+            pleasant moments in their garden.
+            <br>Our Landscape Designs – Was Established in 2013 in London by Nete 
+            Højlund and Burcu Phung who both graduated from KLC School 
+            of Design in London.
           </p>
         </div>
       </div>
@@ -640,7 +661,7 @@ onUnmounted(() => {
             <a 
               :href="`mailto:${member.email}`" 
               class="member-email"
-              :class="{ 'green-contact': member.name === 'Nete Højlund' || member.name === 'Irene Højlund' }"
+              :class="{ 'green-contact': member.name === 'Nete Højlund' || member.name === 'Irene Højlund' || member.name === 'Burcu Phung' }"
             >
               {{ member.email }}
             </a>
@@ -931,10 +952,17 @@ html.smooth-scroll-active .scroll-container {
 }
 
 .intro-text {
-  grid-column: 3 / -1;
   opacity: 0;
   transform: translateY(60px);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
+}
+
+.intro-col-left {
+  grid-column: 2 / 7;
+}
+
+.intro-col-right {
+  grid-column: 8 / 13;
 }
 
 .intro-text.visible {
@@ -942,16 +970,8 @@ html.smooth-scroll-active .scroll-container {
   transform: translateY(0);
 }
 
-.intro-text h2 {
-  font-family: 'Boska', Georgia, serif;
-  font-size: clamp(1.75rem, 4vw + 0.5rem, 3.5rem);
-  font-weight: 300;
-  margin: 0 0 clamp(1rem, 1.5vh, 1.5rem) 0;
-  letter-spacing: -0.01em;
-}
-
 .intro-text p {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
   line-height: 1.8;
   opacity: 0.8;
   max-width: clamp(300px, 90%, 600px);
@@ -961,6 +981,10 @@ html.smooth-scroll-active .scroll-container {
 .team-section {
   padding: clamp(4rem, 7vh, 6rem) 0 clamp(6rem, 8vh, 8rem);
   background: linear-gradient(180deg, transparent 0%, rgba(74, 103, 65, 0.03) 100%);
+}
+
+.team-section .section-title {
+  margin-top: clamp(3.5rem, 6vh, 5rem);
 }
 
 .section-title {
@@ -1002,6 +1026,18 @@ html.smooth-scroll-active .scroll-container {
   grid-column: 2 / 6;
   grid-row: 3;
   align-self: center;
+}
+
+.member-image-wrapper.member-2 {
+  grid-column: 2 / 6;
+  grid-row: 5;
+}
+
+.member-info.member-2 {
+  grid-column: 8 / 12;
+  grid-row: 5;
+  align-self: center;
+  margin-top: -2.5rem;
 }
 
 .member-image-wrapper {
@@ -1058,12 +1094,17 @@ html.smooth-scroll-active .scroll-container {
   transform-origin: center;
 }
 
-/* Slightly scale up Irene's image (member-1) */
+/* Irene's image (member-1) - slightly smaller */
 .member-image-wrapper.member-1 .member-image {
-  transform: scale(1.08);
+  transform: scale(0.98);
   transform-origin: center;
 }
 
+/* Burcu's image (member-2) - slightly smaller */
+.member-image-wrapper.member-2 .member-image {
+  transform: scale(0.92);
+  transform-origin: center;
+}
 
 .member-info.member-0 {
   padding-left: 0;
@@ -1263,7 +1304,8 @@ html.smooth-scroll-active .scroll-container {
     grid-column: span 12;
   }
   
-  .intro-text {
+  .intro-col-left,
+  .intro-col-right {
     grid-column: 1 / -1;
     text-align: center;
   }
@@ -1296,6 +1338,18 @@ html.smooth-scroll-active .scroll-container {
     grid-row: 5;
   }
   
+  .member-image-wrapper.member-2 {
+    grid-column: 1 / -1;
+    grid-row: 6;
+    margin-top: 3rem;
+  }
+  
+  .member-info.member-2 {
+    grid-column: 1 / -1;
+    grid-row: 7;
+    margin-top: -4.5rem;
+  }
+  
   .member-image-wrapper.member-1 .member-image-container {
     max-width: 100%;
     margin-left: 0;
@@ -1307,7 +1361,11 @@ html.smooth-scroll-active .scroll-container {
   }
   
   .member-image-wrapper.member-1 .member-image {
-    transform: scale(0.9);
+    transform: scale(0.85);
+  }
+  
+  .member-image-wrapper.member-2 .member-image {
+    transform: scale(0.82);
   }
   
   .services-intro {

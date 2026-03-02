@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "compress-images": "node compress-images.js"
+    "compress-images": "node compress-images.js",
+    "compress-scene": "node compress-scene-images.js"
   },
   "dependencies": {
     "gsap": "^3.14.2",

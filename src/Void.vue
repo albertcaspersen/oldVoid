@@ -58,7 +58,7 @@ let landingSwayIntensity = 0 // 0-1 hvor meget sway der påføres (fades ind und
 const landingSwaySpeed = 0.4 // Hastighed af sway (lavere = langsommere)
 const landingSwayAmplitudeX = 1.2 // Amplitude i X-retning (side til side)
 const landingSwayAmplitudeY = 0.3 // Amplitude i Y-retning (op og ned)
-const landingSwayAmplitudeLookX = 0.4 // LookAt X amplitude
+const landingSwayAmplitudeLookX = -0.4 // LookAt X amplitude
 const landingSwayAmplitudeLookY = 0.15 // LookAt Y amplitude
 
 // Array til at holde alle billeder med deres planes, shadows og progress
@@ -68,80 +68,76 @@ let sceneImages = []
 const imageConfigs = [
   
   // landingTræ.png - Landing page tree image
-  { path: '/pics/landingTræ.png', position: [-8, 3.5, 16], rotation: [0, 1, 0], size: 5, id: 'landingTræ', info: 'Landing tree.' },
+  { path: '/pics/NYhydrangeaGate-min.png', position: [-4, 0.76, 18], rotation: [0, 1, 0], size: 4, id: 'landingTræ', info: 'Landing tree.' },
   
   // slutbillede.png - placér ved path end (ignoreres ved landing-calc)
-  { path: '/pics/slutbillede.png', position: [8.5, 0.95, -23.5], rotation: [0, 0.0, -0.02], size: 4, id: 'slutbillede', ignoreForLanding: true, maxDistance: 12, info: 'Slutbillede ved path end.' },
+  { path: '/pics/NYslutbillede-min.png', position: [8.5, 0.95, -23.5], rotation: [0, 0.0, -0.04], size: 4, id: 'slutbillede', ignoreForLanding: true, maxDistance: 12, info: 'Slutbillede ved path end.' },
 
-  // tidligere entry (sketch1)
-  { path: '/pics/image 22.png', position: [-6, 2.45, 10], rotation: [0, 1.3, -0.04], size: 8, id: 'sketch1', maxDistance: 25, info: 'Entrance sketch. Hand-drawn sketch of the property facade.' },
+  // tidligere entry (sketch1) – skjult på landing page
+  { path: '/pics/NYport-min.png', position: [-6.01, 2.20, 10], rotation: [0, 1.3, 0], size: 4, id: 'sketch1', maxDistance: 25, info: 'Entrance sketch. Hand-drawn sketch of the property facade.', ignoreForLanding: true },
   
 
-  { path: '/pics/Gemini_Generated_Image_phek2ephek2ephek 1.png', position: [-6, 2.45, 9.98], rotation: [0, 1.3, -0.04], size: 8, waitFor: 'sketch1', waitForProgress: 0.6, animationLength: 0.10 },
+  // farveversion af sketch1 – også skjult på landing
+  { path: '/pics/NYportFarve-min.png', position: [-6, 2.25, 10], rotation: [0, 1.3, 0], size: 4, waitFor: 'sketch1', waitForProgress: 0.6, animationLength: 0.10, ignoreForLanding: true },
   
   
   // 4 x HøjTræSketch.png
-  { path: '/pics/HøjTræSketch.png', position: [1, 2.25, 17], rotation: [0, 0.5, 0], size: 0.6, opacity: 0.1, info: 'Cypress. Originally from the Mediterranean.' },
-  { path: '/pics/HøjTræSketch.png', position: [7, 2.25, 17], rotation: [0, 0.5, 0], size: 0.6, info: 'Cypress. Symbolizes eternal life.' },
+  { path: '/pics/NYlandingTræ2-min.png', position: [-1, 1.35, 17], rotation: [0, 0.5, 0], size: 2.6, opacity: 0.1, info: 'Cypress. Originally from the Mediterranean.' },
+  { path: '/pics/NYcypresBlyant3-min.png', position: [7, 1.05, 17], rotation: [0, 0.5, 0], size: 1, opacity: 0.1, info: 'Cypress. Originally from the Mediterranean.' },
+  
 
   
   // højtTræ2.png
-  { path: '/pics/højtTræ2.png', position: [6, 1.9, 14], rotation: [0, 0.0, -0.01], size: 1.5, info: 'Thuja. Often used as hedge in Denmark.' },
+  { path: '/pics/NYcypressBlyant-min.png', position: [6, 1.45, 14], rotation: [0, 0.0, -0.01], size: 0.7, info: 'Thuja. Often used as hedge in Denmark.' },
   
-  // planteKrukke.png
-  { path: '/pics/planteKrukke.png', position: [-1, 0.6, 17], rotation: [0, 1.1, 0], size: 0.8, info: 'Terracotta pot. Handmade in Italy.' },
+
+  { path: '/pics/NYcypressBlyant2-min.png', position: [1, 1.40, 17], rotation: [0, 0.7, 0], size: 0.7, info: 'Terracotta pot. Handmade in Italy.' },
   
   // kruk.png
-  { path: '/pics/kruk.png', position: [-12, 0.45, 1], rotation: [0, 1.3, 0], size: 0.8, info: 'Antique pot. Inspired by Greece.' },
+  { path: '/pics/NYcypressFarve2-min.png', position: [-12, 2, 3], rotation: [0, 1.3, 0], size: 2.5, info: 'Antique pot. Inspired by Greece.' },
   
   // potten.png
-  { path: '/pics/potten.png', position: [-4, 0.3, 18], rotation: [0, 0.8, 0], size: 0.5, info: 'Decorative pot.' },
+  //{ path: '/pics/NYlandingKrukke.png', position: [-4, 0.56, 18], rotation: [0, 0.8, 0], size: 0.7, info: 'Decorative pot.' },
   
   // blomster.png
-  { path: '/pics/blomster.png', position: [2, 0.5, 20], rotation: [0, 0.6, 0], size: 0.8, info: 'Lavender. Fragrance of Provence.' },
-  
-  // 2 x busk.png
-  { path: '/pics/busk.png', position: [9, 0.5, 15], rotation: [0, -0.2, 0], size: 2, info: 'Boxwood. Perfect for topiary.' },
+  { path: '/pics/NYBuskmedBlomst-min.png', position: [2, 0.12, 20], rotation: [0, 0.6, -0.09], size: 1.2, info: 'Lavender. Fragrance of Provence.' },
+
+  { path : '/pics/NYdobbelBusk-min.png', position: [9, 0.2, 15], rotation: [0, -0.2, 0], size: 2.5, info: 'Boxwood. Adds structure and greenery.' },
 
   
   // Højtræ3.png
-  { path: '/pics/Højtræ3.png', position: [5, 2.7, 7], rotation: [0, 0, 0], size: 2, info: 'Spruce. Nordic forest tree.' },
+  //{ path: '/pics/NYcypresBlyant3.png', position: [5, 1.5, 7], rotation: [0, 0, 0], size: 1.4, info: 'Spruce. Nordic forest tree.' },
   
   // højTræFarve.png
-  { path: '/pics/højTræFarve.png', position: [-6, 2.9, 1], rotation: [0, 0.2, 0], size: 1.7, info: 'Pine. Grows wild in Scandinavia.' },
+  { path: '/pics/NYcypresFarve1-min.png', position: [-6, 1.75, 1], rotation: [0, 0.2, 0], size: 1.7, info: 'Pine. Grows wild in Scandinavia.' },
   
   // sketchtræ.png
-  { path: '/pics/sketchtræ.png', position: [-11, 3, 4], rotation: [0, 1.3, 0], size: 5, info: 'Oak. Can live over 500 years.' },
+  { path: '/pics/NYgammeltTræ-min.png', position: [-11, 1.7, 4], rotation: [0, 1.3, 0], size: 3.3, info: 'Oak. Can live over 500 years.' },
   
   // træOLD.png
-  { path: '/pics/træOLD.png', position: [-4, 2.3, 21], rotation: [0, 1.0, 0], size: 1.5, info: 'Old tree.' },
+  { path: '/pics/NYlandingVenstreTræ-min.png', position: [-4, 1.06, 21], rotation: [0, 1.0, 0], size: 2.5, info: 'Old tree.' },
   
   // træPot.png
-  { path: '/pics/træPot.png', position: [-12, 1.30, -6], rotation: [0, 0.9, 0], size: 2, info: 'Olive tree in pot. From Tuscany.' },
+  { path: '/pics/træPot.png', position: [-12, 1.30, -6], rotation: [0, 0.9, 0], size: 2, info: 'Olive tree in pot. From Tuscany.', ignoreForLanding: true },
   
   // blomstKrukke.png
-  { path: '/pics/blomstKrukke.png', position: [0, 0.7, 0], rotation: [0, 0.3, 0], size: 1.3, info: 'Hydrangea. Blooms all summer.' },
+  { path: '/pics/image 503-min.png', position: [0, 0.8, 0], rotation: [0, 0.3, 0], size: 1.3, info: 'Hydrangea. Blooms all summer.', ignoreForLanding: true },
   
   // fontaine.png
-  { path: '/pics/fontaine.png', position: [0, 1.38, -6], rotation: [0, -1, 0], size: 3, maxDistance: 11, info: 'Fountain. Classic Italian style.' },
+  { path: '/pics/NYfontaine-min.png', position: [0, 1.23, -6], rotation: [0, -1, 0], size: 3, maxDistance: 11, info: 'Fountain. Classic Italian style.', ignoreForLanding: true },
   
   // hvideblomster.png (bag fontænen)
-  { path: '/pics/hvideblomster.png', position: [0, 0.65, -14], rotation: [0, -0.6, 0], size: 1.5, id: 'hvideblomster', info: 'White flowers.' },
+  //{ path: '/pics/hvideblomster.png', position: [0, 0.65, -14], rotation: [0, -0.6, 0], size: 1.5, id: 'hvideblomster', info: 'White flowers.' },
   
-  // portSketch.png (bag hvideblomster)
-  { path: '/pics/portSketch.png', position: [10, 2.15, -13], rotation: [0, -0.6, 0], size: 9, maxDistance: 20, id: 'portSketch', waitFor: 'hvideblomster', waitForProgress: 0.0, animationLength: 0.10, info: 'Port sketch.' },
-  
-  // portFarve.png (foran portSketch)
-  { path: '/pics/portFarve.png', position: [10, 2.15, -12.99], rotation: [0, -0.6, 0], size: 9, waitForProgress: 0.6, animationLength: 0.10, info: 'Port color.' },
+  // new bench/tree image replacing portSketch and portFarve (split into two entries to keep camera center unchanged)
+  { path: '/pics/NYbænkogtræ-min.png', position: [10, 2.4, -13], rotation: [0, -0.6, 0.02], size: 9, maxDistance: 20, info: 'Bench and tree.', ignoreForLanding: true },
 
   // træ ved slutningen - placeret ved siden af portSketch
-  { path: '/pics/trævedslutningen.png', position: [3.2, 2.8, -21.5], rotation: [0, -0.2, 0], size: 1, id: 'trævedslutningen', info: 'Træ ved slutningen.', ignoreForLanding: true },
+  { path: '/pics/NYcypressVedslutning-min.png', position: [3.2, 1.63, -21.5], rotation: [0, -0.2, 0], size: 1, id: 'trævedslutningen', info: 'Træ ved slutningen.', ignoreForLanding: true },
 
-  // lillablomst.png
-  { path: '/pics/lillablomst.png', position: [-7, 0.35, -9], rotation: [0, 0.2, 0], size: 0.5, info: 'Purple flower.' },
 
   // New: træ og busk placed next to the purple flower
-  { path: '/pics/træogbusk.png', position: [-5.2, 3.2, -15.1], rotation: [0, 0.2, 0], size: 2.5, info: 'Træ og busk.', ignoreForLanding: true },
+  { path: '/pics/NYlandscape2-min.png', position: [-5.2, 1.9, -15.1], rotation: [0, -0.2, 0], size: 8.5, info: 'Træ og busk.', ignoreForLanding: true, maxDistance: 25 },
 
 ]
 let targetScrollProgress = 0
@@ -443,7 +439,8 @@ let use3DNav = false // Toggle to use legacy 3D nav meshes (we'll use 2D links i
 const navLinks = [
   { label: 'About', route: '/about' },
   { label: 'Cases', route: '/cases' },
-  { label: 'Contact', route: '/contact' }
+  { label: 'Contact', route: '/contact' },
+  { label: 'Our Designs', route: '/ourdesigns' }
 ]
 // Delay before starting the end-nav GSAP animation (seconds)
 const navAnimationDelay = 0.6
@@ -1309,39 +1306,10 @@ onMounted(() => {
   
   cameraPath = new THREE.CatmullRomCurve3(pathPoints)
   
-  // LANDING PAGE: Start kameraet med at kigge mod alle billederne i scenen
-  // Beregn centrum af alle billederne
-  let imagesCenter = new THREE.Vector3(0, 0, 0)
-  let imagesCount = 0
-  imageConfigs.forEach(config => {
-    // Ignorer billeder markeret som `ignoreForLanding` så et enkelt billede langt ude
-    // i Z ikke skubber landing-kameraets position
-    if (config.ignoreForLanding) return
-    imagesCenter.add(new THREE.Vector3(config.position[0], config.position[1], config.position[2]))
-    imagesCount++
-  })
-  if (imagesCount > 0) {
-    imagesCenter.divideScalar(imagesCount)
-  }
-  
-  // Landing kamera position - justeret position for bedre view
-  const pathStartPoint = cameraPath.getPoint(0) // Hent path start position
-  // Placér kameraet i en anden position for varieret view
-  const cameraOffsetX = 5 // Til højre for at se fra den side
-  const cameraOffsetZ = 20 // Bagved billederne
-  const cameraHeight = 3 // Højere op for bedre overblik
-  landingCameraPosition = new THREE.Vector3(
-    imagesCenter.x + cameraOffsetX, // Brug imagesCenter som reference
-    cameraHeight, 
-    imagesCenter.z + cameraOffsetZ
-  )
-  
-  // Kig mod centrum af billederne med lidt offset
-  landingCameraLookAt = new THREE.Vector3(
-    imagesCenter.x - 2, // Lidt til venstre
-    imagesCenter.y + 1, // Lidt højere
-    imagesCenter.z
-  )
+  // LANDING PAGE: Hardcoded kamera position (stabil uafhængigt af image-ændringer)
+  const pathStartPoint = cameraPath.getPoint(0)
+  landingCameraPosition = new THREE.Vector3(3.77, 3, 25.77)
+  landingCameraLookAt = new THREE.Vector3(-3.23, 2.67, 5.77)
   
   // Intro kamera start position (længere tilbage og højere op for åbningsanimation)
   // Kameraet starter her og panorerer til landingCameraPosition når preloader forsvinder
@@ -3347,7 +3315,11 @@ onMounted(() => {
           '/pics/kruk.png',
           '/pics/lillablomst.png',
           '/pics/sketchtræ.png',
-          '/pics/træPot.png'
+          '/pics/træPot-min.png',
+          '/pics/NYbænkogtræ-min.png', // hide bench image on landing
+          // nyt: fjern disse to tidlige skitsebilleder fra landing
+          '/pics/NYport-min.png',
+          '/pics/NYportFarve-min.png'
         ]
 
         sceneImages.forEach(img => {
@@ -4541,7 +4513,11 @@ onMounted(() => {
             '/pics/kruk.png',
             '/pics/lillablomst.png',
             '/pics/sketchtræ.png',
-            '/pics/træPot.png'
+            '/pics/træPot-min.png',
+            '/pics/NYcypresFarve1-min.png',
+            '/pics/NYgammeltTræ-min.png',
+            '/pics/NYcypressFarve2-min.png',
+            '/pics/NYbænkogtræ-min.png' // hide bench image on landing
           ]
           const isHiddenOnLanding = hiddenOnLandingPage.includes(imageData.config.path) ||
                                      imageData.config.id === 'portSketch' ||

@@ -36,23 +36,22 @@ function shuffleArray(array) {
 }
 
 const cases = [
-  { id: 1, title: 'Design 1', location: '', category: '', year: '', image: '/pics/DesignsPics/69a73c33-4aee-4b11-9da9-29a201e3f5b4.JPG' },
-  { id: 2, title: 'Design 2', location: '', category: '', year: '', image: '/pics/DesignsPics/7E5B1840-F4AF-498E-8A72-19B92BFC39FD.JPG' },
-  { id: 3, title: 'Design 3', location: '', category: '', year: '', image: '/pics/DesignsPics/875f50c2-91e9-48f9-8d4f-5789fb6b1f01.JPG' },
-  { id: 4, title: 'Design 4', location: '', category: '', year: '', image: '/pics/DesignsPics/94f2ac05-19ca-42a0-a57f-829fbff4deea.JPG' },
-  { id: 5, title: 'Design 5', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0005.JPG' },
-  { id: 6, title: 'Design 6', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0010.JPG' },
-  { id: 7, title: 'Design 7', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_0015.JPG' },
-  { id: 8, title: 'Design 8', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_2666.JPG' },
-  { id: 9, title: 'Design 9', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_3087.JPG' },
-  { id: 10, title: 'Design 10', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_3088.JPG' },
-  { id: 11, title: 'Design 11', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_4120.JPG' },
-  { id: 12, title: 'Design 12', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_4747.JPG' },
-  { id: 13, title: 'Design 13', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_5180.JPG' },
-  { id: 14, title: 'Design 14', location: '', category: '', year: '', image: '/pics/DesignsPics/IMG_6631.JPG' },
-  { id: 15, title: 'Design 15', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-28-56.JPG' },
-  { id: 16, title: 'Design 16', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-28-57.JPG' },
-  { id: 17, title: 'Design 17', location: '', category: '', year: '', image: '/pics/DesignsPics/PHOTO-2025-01-12-13-31-45.JPG' },
+  { id: 1, title: 'A Coastal Garden', location: 'Coastal', category: 'residential', year: '2024', image: '/pics/casesPics/acoastalgarden-min.jpg' },
+  { id: 8, title: 'Copenhagen Garden', location: 'Copenhagen', category: 'urban', year: '2024', image: '/pics/casesPics/copenhagengarden-min.jpg' },
+  { id: 11, title: 'Entertainment Garden', location: 'Estate', category: 'estate', year: '2023', image: '/pics/casesPics/entertainmentgarden-min.jpg' },
+  { id: 17, title: 'Tudor House', location: 'Historic', category: 'residential', year: '2024', image: '/pics/casesPics/tudorhouse.jpg' },
+  // sketches – added automatically from public/pics/casesPics
+  { id: 18, title: 'Sketch 1', location: '', category: '', year: '', image: '/pics/casesPics/Osketch1-min.png' },
+  { id: 19, title: 'Sketch 2', location: '', category: '', year: '', image: '/pics/casesPics/Osketch2-min.png' },
+  { id: 20, title: 'Sketch 3', location: '', category: '', year: '', image: '/pics/casesPics/Osketch3-min.png' },
+  { id: 21, title: 'Sketch 4', location: '', category: '', year: '', image: '/pics/casesPics/Osketch4-min.png' },
+  { id: 22, title: 'Sketch 5', location: '', category: '', year: '', image: '/pics/casesPics/Osketch5-min.png' },
+  { id: 23, title: 'Sketch 6', location: '', category: '', year: '', image: '/pics/casesPics/Osketch6-min.png' },
+  { id: 24, title: 'Sketch 7', location: '', category: '', year: '', image: '/pics/casesPics/Osketch7-min.png' },
+  { id: 25, title: 'Sketch 8', location: '', category: '', year: '', image: '/pics/casesPics/Osketch8-min.png' },
+  { id: 26, title: 'Sketch 9', location: '', category: '', year: '', image: '/pics/casesPics/Osketch9-min.png' },
+  { id: 27, title: 'Sketch 10', location: '', category: '', year: '', image: '/pics/casesPics/Osketch10-min.png' },
+  { id: 28, title: 'Sketch 11', location: '', category: '', year: '', image: '/pics/casesPics/Osketch11-min.png' },
 ]
 
 // randomise order on every mount

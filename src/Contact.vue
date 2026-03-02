@@ -27,6 +27,11 @@ const contacts = [
     phone: '+45 28 15 19 13'
   },
   {
+    name: 'Burcu Phung',
+    email: 'burcu@ourlandscapedesigns.com',
+    phone: ''
+  },
+  {
     name: 'Nete Højlund',
     email: 'nete@ourlandscapedesigns.com',
     phone: '+45 53 78 86 60'
@@ -511,7 +516,7 @@ onUnmounted(() => {
             :key="contact.name"
             class="contact-card"
             :class="[
-              index === 0 ? 'contact-card-irene' : 'contact-card-nete',
+              index === 0 ? 'contact-card-irene' : index === 1 ? 'contact-card-burcu' : 'contact-card-nete',
               { visible: visibleSections.has(`contact-${index}`) }
             ]"
             :data-section="`contact-${index}`"
@@ -521,14 +526,15 @@ onUnmounted(() => {
             <a 
               :href="`mailto:${contact.email}`" 
               class="contact-email"
-              :class="{ 'green-contact': contact.name === 'Nete Højlund' || contact.name === 'Irene Højlund' }"
+              :class="{ 'green-contact': contact.name === 'Nete Højlund' || contact.name === 'Irene Højlund' || contact.name === 'Burcu Phung' }"
             >
               {{ contact.email }}
             </a>
             <a 
+              v-if="contact.phone"
               :href="`tel:${contact.phone}`" 
               class="contact-phone"
-              :class="{ 'green-contact': contact.name === 'Nete Højlund' || contact.name === 'Irene Højlund' }"
+              :class="{ 'green-contact': contact.name === 'Nete Højlund' || contact.name === 'Irene Højlund' || contact.name === 'Burcu Phung' }"
             >
               {{ contact.phone }}
             </a>
@@ -794,6 +800,8 @@ body {
 .contact-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: clamp(0.5rem, 1vh, 0.75rem);
   opacity: 0;
   transform: translateY(60px);
@@ -801,13 +809,18 @@ body {
 }
 
 .contact-card-irene {
-  grid-column-start: 4;
-  grid-column-end: 6;
+  grid-column-start: 3;
+  grid-column-end: 5;
+}
+
+.contact-card-burcu {
+  grid-column-start: 6;
+  grid-column-end: 8;
 }
 
 .contact-card-nete {
-  grid-column-start: 8;
-  grid-column-end: 10;
+  grid-column-start: 9;
+  grid-column-end: 11;
 }
 
 .contact-card.visible {
@@ -925,6 +938,7 @@ body {
   }
   
   .contact-card-irene,
+  .contact-card-burcu,
   .contact-card-nete {
     grid-column: span 12 !important;
     grid-column-start: 1 !important;
